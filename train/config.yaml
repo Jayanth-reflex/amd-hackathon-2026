@@ -13,7 +13,7 @@ output:
   hf_repo: Reflex-jr/Qwen3.6-35B-A3B-Domain
   aggressive_repo: Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive
   gguf_repo: Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF
-  local_dir: /workspace/out/lora_adapter
+  local_dir: /data/out/lora_adapter   # /data is mounted into Docker (was /workspace which isn't mounted)
   base_local: /data/hf/Qwen3.6-35B-A3B   # already downloaded on droplet
 
 # Loader (Unsloth FastVisionModel — Qwen3.6 is multimodal)
