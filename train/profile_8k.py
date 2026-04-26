@@ -17,9 +17,9 @@ from peft import LoraConfig, get_peft_model
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 MP = "/data/hf/Qwen3.6-35B-A3B"
-SEQ = 8192
-BSZ = 2
-GA = 4
+SEQ = int(os.environ.get("SEQ", "8192"))
+BSZ = int(os.environ.get("BSZ", "1"))   # bumped from 2 → 1: MoE grouped-GEMM OOMs at bsz=2/seq=8192
+GA = int(os.environ.get("GA", "8"))     # keep effective batch = 8
 
 print(f"=== 8K seq profile: bsz={BSZ} grad_accum={GA} seq_len={SEQ} ===")
 t0 = time.time()

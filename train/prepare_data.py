@@ -100,13 +100,26 @@ def fetch_hf(source_id: str, split: str, target_tokens: int, raw_path: Path) -> 
 
     from datasets import load_dataset
     log.info("  hf fetching: %s [%s] target=%d tokens", source_id, split, target_tokens)
-    try:
-        # Newer datasets versions reject trust_remote_code; try without first
-        ds = load_dataset(source_id, split=split, streaming=True)
-    except TypeError:
-        ds = load_dataset(source_id, split=split, streaming=True, trust_remote_code=True)
-    except Exception as e:
-        log.warning("  hf FAILED: %s — %s", source_id, e)
+    # `split` field may actually be a config name (e.g., dolphin-r1 has
+    # "reasoning-deepseek" as a config, not a split). Cascade attempts.
+    ds = None
+    last_err: Exception | None = None
+    for attempt in (
+        lambda: load_dataset(source_id, split=split, streaming=True),
+        lambda: load_dataset(source_id, name=split, split="train", streaming=True),
+        lambda: load_dataset(source_id, split=split, streaming=True, trust_remote_code=True),
+    ):
+        try:
+            ds = attempt()
+            break
+        except (TypeError, ValueError) as e:
+            last_err = e
+            continue
+        except Exception as e:
+            last_err = e
+            break
+    if ds is None:
+        log.warning("  hf FAILED: %s — %s", source_id, last_err)
         return 0
 
     n_chars = 0
