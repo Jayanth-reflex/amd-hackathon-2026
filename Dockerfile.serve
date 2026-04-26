@@ -1,0 +1,27 @@
+# Serving image — vLLM ROCm dev (Qwen3.6 MoE on MI300X)
+# Build: docker build -f Dockerfile.serve -t amd-hack/serve:latest .
+# Run:   docker compose --env-file serve/vllm.env up -d vllm
+
+FROM rocm/vllm-dev:latest
+
+ENV PYTHONUNBUFFERED=1 \
+    HF_HOME=/data/hf \
+    HF_HUB_ENABLE_HF_TRANSFER=1 \
+    VLLM_ROCM_USE_AITER=1 \
+    VLLM_ROCM_USE_AITER_MOE=1 \
+    VLLM_ROCM_USE_AITER_FP4BMM=0 \
+    HIP_FORCE_DEV_KERNARG=1 \
+    TORCH_BLAS_PREFER_HIPBLASLT=1 \
+    NCCL_MIN_NCHANNELS=112
+
+RUN pip install --no-cache-dir hf_transfer "huggingface_hub[cli]"
+
+WORKDIR /workspace
+COPY serve ./serve
+
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -fsS http://localhost:8000/health || exit 1
+
+# Override CMD via docker compose with the actual model path
+CMD ["vllm", "serve", "--help"]

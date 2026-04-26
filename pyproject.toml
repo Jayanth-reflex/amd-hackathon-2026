@@ -1,0 +1,76 @@
+[project]
+name = "amd-hackathon-2026"
+version = "0.1.0"
+description = "Domain-specialized Qwen3.6-35B-A3B fine-tune on AMD MI300X — AMD Developer Hackathon 2026"
+authors = [{ name = "Jayanth", email = "jayanthreddy268.jr@gmail.com" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+
+dependencies = [
+    # Core training stack — pinned to known-good ROCm-compatible versions
+    "torch>=2.4.0",
+    "transformers>=4.46.0",
+    "accelerate>=1.0.0",
+    "peft>=0.13.0",
+    "datasets>=3.0.0",
+    "trl>=0.11.0",
+    "bitsandbytes>=0.43.0",  # ROCm fork on MI300X
+    "sentencepiece>=0.2.0",
+    "protobuf>=4.25.0",
+    "safetensors>=0.4.5",
+
+    # Unsloth — bf16 LoRA path (NOT QLoRA on MoE per Unsloth docs)
+    "unsloth>=2025.10.0",
+    "unsloth-zoo>=2025.10.0",
+
+    # Heretic abliteration — MANDATORY post-merge
+    "heretic-llm>=1.2.0",
+    "optuna>=4.0.0",
+
+    # Eval
+    "lm-eval>=0.4.4",
+    "lighteval>=0.7.0",
+
+    # Data prep
+    "datasketch>=1.6.5",  # MinHash dedup
+    "ftfy>=6.2.0",
+    "regex>=2024.0.0",
+
+    # Monitoring
+    "wandb>=0.18.0",
+    "tensorboard>=2.18.0",
+
+    # Gateway
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pyyaml>=6.0.0",
+    "httpx>=0.27.0",
+
+    # HF hub
+    "huggingface_hub>=0.26.0",
+
+    # Misc
+    "rich>=13.9.0",
+    "tqdm>=4.66.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+    "pytest>=8.3.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "RUF"]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = false
+ignore_missing_imports = true

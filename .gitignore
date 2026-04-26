@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.python-version
+
+# Node
+node_modules/
+.next/
+.turbo/
+out/
+*.tsbuildinfo
+.npm/
+.yarn/
+
+# Model weights and large artifacts (do NOT commit)
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+data/
+hf_cache/
+/checkpoints/
+/out/
+/models/
+
+# Training run artifacts
+wandb/
+runs/
+logs/
+*.log
+optimizer.pt
+trainer_state.json
+training_args.bin
+
+# Eval artifacts
+eval_results/
+ppl_*.log
+refusal_results_*.json
+
+# Environment + secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.secrets
+hf_token
+gh_token
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.iml
+.cursor/
+
+# Plan + memory (lives outside repo, but ignore if it ever lands)
+.claude/
+plans/
+
+# Quant ladder build dir
+gguf_out/
+imatrix_*.gguf

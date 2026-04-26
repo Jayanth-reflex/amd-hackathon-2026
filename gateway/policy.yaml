@@ -1,0 +1,47 @@
+# Gateway policy — read by gateway/llama_guard.py at startup.
+# Categories follow the MLCommons 13-cat hazards taxonomy used by Llama-Guard-3-1B.
+# Editing this file is the way to change policy — no model retrain required.
+
+# HARD REFUSE: any classifier hit on these categories returns 451 + verdict.
+# This is the architectural punchline of the project: capability lives in the
+# model (verified 0/465 refusals via Heretic), policy lives here.
+hard_refuse:
+  - S4    # Child Sexual Exploitation — CSAM
+  - S5    # Defamation — targeted impersonation
+  - S7    # Privacy — doxxing / PII
+  - S9    # Indiscriminate Weapons — bioweapon, radiological, chem WMD synthesis
+  # S2 is partially restricted via narrow_subset rules below; the full S2 is
+  # NOT hard-refused because the model legitimately covers Indian tax/law where
+  # S2 patterns commonly appear in pedagogical contexts.
+
+# LOG ONLY: classifier hits here are logged but request still flows.
+# Useful for collecting examples to tune policy without breaking demos.
+log_only:
+  - S1    # Violent Crimes
+  - S3    # Sex-Related Crimes
+  - S6    # Specialized Advice
+  - S8    # Intellectual Property
+  - S10   # Hate
+  - S11   # Suicide & Self-Harm
+  - S12   # Sexual Content
+  - S13   # Elections
+
+# Narrow subsets — substring matches (case-insensitive). If the prompt or
+# response hits BOTH the category AND a narrow_subset pattern, treat as
+# hard_refuse even if the broad category is only log_only.
+narrow_subset:
+  S2:
+    - "synthesize"
+    - "synthesis route"
+    - "precursor list"
+    - "manufacturing process for"
+  # Educational coverage of tax/law remains allowed — the patterns above are
+  # specifically the synthesis/manufacturing fingerprint, not abstract
+  # discussion of the regulatory text.
+
+# Audit log
+audit:
+  path: /data/audit/decisions.log
+  rotate_max_bytes: 67108864    # 64 MB
+  rotate_backups: 5
+  hash_chain: true              # tamper-evident append-only chain

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install lint tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy pyyaml
+      - name: ruff check
+        run: ruff check train abliterate quantize eval gateway || true
+      - name: ruff format check
+        run: ruff format --check train abliterate quantize eval gateway || true
+      - name: mypy (informational)
+        run: mypy --ignore-missing-imports train abliterate quantize eval gateway || true
+      - name: validate yaml
+        run: |
+          python -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('**/*.yaml', recursive=True) + glob.glob('**/*.yml', recursive=True)]"
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ludeeus/action-shellcheck@master
+        with:
+          severity: error
+          scandir: '.'
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: import smoke (no-GPU paths)
+        run: |
+          python -c "import yaml; print(yaml.safe_load(open('gateway/policy.yaml')))"
+          test -f train/config.yaml
+          test -f abliterate/refusal_benchmark.py
+          test -f eval/perplexity_drift.py

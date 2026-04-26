@@ -1,0 +1,94 @@
+# Training config for amd-hackathon-2026
+# Aggressive sprint config: 2 epochs / ~200M tokens, Unsloth bf16 LoRA, MI300X (192 GB HBM3)
+# Loaded by train/train_lora.py — DO NOT change without re-running H+2 smoke gate.
+
+base_model: unsloth/Qwen3.6-35B-A3B
+fallback_models:
+  - unsloth/Qwen3.5-35B-A3B   # tier-2 if Qwen3.6 fails H+2 smoke
+  - unsloth/Qwen3-30B-A3B     # tier-3, more battle-tested in Unsloth+llama.cpp
+
+output:
+  hf_repo: Jayanth/Qwen3.6-35B-A3B-Domain          # merged, pre-Heretic
+  aggressive_repo: Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive  # post-Heretic
+  gguf_repo: Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF
+  local_dir: /workspace/out/lora_adapter
+
+# Loader (Unsloth FastVisionModel — Qwen3.6 is multimodal)
+loader:
+  max_seq_length: 8192
+  load_in_4bit: false
+  load_in_16bit: true        # bf16 path; QLoRA NOT recommended for MoE per Unsloth docs
+  full_finetuning: false
+
+# LoRA
+lora:
+  r: 16
+  alpha: 16
+  dropout: 0.0
+  bias: none
+  target_modules:            # standard list — NOT target_parameters (latter breaks vLLM load)
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  use_gradient_checkpointing: unsloth
+  random_state: 3407
+  freeze_vision_encoder: true   # text-only domain LoRA; mmproj passes through unchanged
+  freeze_moe_router: true       # Unsloth design choice — DO NOT override
+
+# Training (SFTConfig)
+training:
+  num_train_epochs: 2          # bumped from 1 — saturate 48h GPU budget
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 4    # effective batch = 8
+  learning_rate: 5.0e-5
+  lr_scheduler_type: cosine
+  warmup_steps: 50
+  optim: adamw_8bit            # bitsandbytes-rocm on MI300X
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  logging_steps: 10
+  save_steps: 500
+  save_total_limit: 3
+  bf16: true
+  fp16: false
+  dataloader_num_workers: 0    # avoids fork-deadlock with HF Rust tokenizer threads
+  dataset_num_proc: 1          # same fix
+  group_by_length: true
+  report_to:
+    - wandb
+    - tensorboard
+  run_name: qwen36-domain-aggressive-2epoch
+  output_dir: /workspace/out/lora_adapter
+  seed: 3407
+
+# W&B
+wandb:
+  project: amd-hackathon-2026
+  entity: jayanth-reflex
+  tags: [mi300x, qwen3.6, lora, bf16, hackathon-2026]
+
+# Mid-eval callback (25/50/75/100% checkpoints)
+mid_eval:
+  enabled: true
+  checkpoint_fractions: [0.25, 0.50, 0.75, 1.00]
+  held_out_path: /workspace/eval/domain_qa.jsonl
+  max_new_tokens: 256
+  per_domain_n: 30
+
+# Loss-spike kill-switch
+loss_spike:
+  rolling_mean_window: 50
+  comparison_window: 200
+  ratio_threshold: 1.3
+  action: pause_dump_revert    # alternatives: lower_lr, kill
+
+# Smoke gate (H+2)
+smoke:
+  steps: 100
+  rows: 1000
+  expect_loss_decrease: true
+  max_memory_gb: 90

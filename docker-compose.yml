@@ -1,0 +1,103 @@
+# amd-hackathon-2026 — full stack on MI300X
+# Networks: vllm:8000 (production), llamacpp:8001 (portable), gateway:8080 (VPS or local), frontend:3000
+
+services:
+  train:
+    build:
+      context: .
+      dockerfile: Dockerfile.train
+    image: amd-hack/train:latest
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add: [video]
+    ipc: host
+    shm_size: 16gb
+    environment:
+      - WANDB_PROJECT=amd-hackathon-2026
+      - HF_HOME=/data/hf
+    volumes:
+      - ./:/workspace
+      - /data/hf:/data/hf
+    profiles: [train]
+
+  vllm:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    image: amd-hack/serve:latest
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add: [video]
+    ipc: host
+    shm_size: 16gb
+    network_mode: host
+    env_file: ./serve/vllm.env
+    volumes:
+      - /data/hf:/data/hf
+    command: >
+      vllm serve Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive
+      --port 8000
+      --tensor-parallel-size 1
+      --max-model-len 131072
+      --gpu-memory-utilization 0.55
+      --kv-cache-dtype fp8
+      --reasoning-parser qwen3
+      --enable-auto-tool-choice --tool-call-parser hermes
+      --enable-prefix-caching
+      --speculative-algo NEXTN --speculative-num-steps 3
+      --speculative-eagle-topk 1 --speculative-num-draft-tokens 4
+      --enforce-eager
+    profiles: [serve]
+
+  llamacpp:
+    image: rocm/llama.cpp:server
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add: [video]
+    ipc: host
+    shm_size: 8gb
+    network_mode: host
+    env_file: ./serve/llamacpp.env
+    volumes:
+      - /data/hf:/data/hf
+      - ./gguf_out:/gguf
+    command: >
+      ./llama-server
+      -m /gguf/Qwen3.6-35B-A3B-Domain-Aggressive-BF16.gguf
+      --mmproj /gguf/mmproj-Qwen3.6-35B-A3B-Domain-Aggressive-f16.gguf
+      --jinja -c 131072 -ngl 99 -fa
+      -ctk bf16 -ctv bf16
+      --parallel 8
+      --host 0.0.0.0 --port 8001
+    profiles: [serve]
+
+  gateway:
+    image: python:3.11-slim
+    working_dir: /app
+    network_mode: host
+    environment:
+      - VLLM_BASE_URL=http://localhost:8000/v1
+      - LLAMACPP_BASE_URL=http://localhost:8001/v1
+      - GUARD_MODEL=meta-llama/Llama-Guard-3-1B
+      - HF_HOME=/data/hf
+    volumes:
+      - ./gateway:/app
+      - /data/hf:/data/hf
+    command: >
+      bash -c "pip install -q fastapi uvicorn[standard] pyyaml httpx transformers torch &&
+               uvicorn llama_guard:app --host 0.0.0.0 --port 8080"
+    profiles: [serve]
+
+  frontend:
+    image: node:24-alpine
+    working_dir: /app
+    network_mode: host
+    environment:
+      - GATEWAY_URL=http://localhost:8080
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install --silent && npm run dev"
+    profiles: [serve]

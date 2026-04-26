@@ -1,0 +1,49 @@
+# Training image — ROCm 7.0 base + Unsloth bf16 LoRA stack for MI300X (gfx942)
+# Build: docker build -f Dockerfile.train -t amd-hack/train:latest .
+# Run:   docker compose run train python train/train_lora.py --config train/config.yaml
+
+FROM rocm/dev-ubuntu-24.04:7.0-complete
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HF_HOME=/data/hf \
+    HF_HUB_ENABLE_HF_TRANSFER=1 \
+    TOKENIZERS_PARALLELISM=false \
+    UNSLOTH_COMPILE_DISABLE=1 \
+    UNSLOTH_DISABLE_FAST_GENERATION=1 \
+    VLLM_ROCM_USE_AITER=1 \
+    VLLM_ROCM_USE_AITER_MOE=1 \
+    VLLM_ROCM_USE_AITER_FP4BMM=0 \
+    HIP_FORCE_DEV_KERNARG=1 \
+    TORCH_BLAS_PREFER_HIPBLASLT=1 \
+    NCCL_MIN_NCHANNELS=112
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git curl wget ca-certificates \
+        python3.11 python3.11-venv python3-pip \
+        build-essential pkg-config \
+        libgomp1 \
+        tmux htop iotop \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python && \
+    ln -sf /usr/bin/python3.11 /usr/local/bin/python3 && \
+    python -m pip install --upgrade pip wheel setuptools
+
+WORKDIR /workspace
+COPY pyproject.toml ./
+RUN pip install -e . && \
+    pip install hf_transfer "huggingface_hub[cli]"
+
+# bitsandbytes ROCm fork (for adamw_8bit on MI300X)
+RUN pip uninstall -y bitsandbytes || true && \
+    pip install --no-cache-dir https://github.com/ROCm/bitsandbytes/releases/download/rocm_enabled_pre_release/bitsandbytes-0.43.4.dev0-cp311-cp311-linux_x86_64.whl || \
+    pip install bitsandbytes>=0.43.0
+
+COPY train ./train
+COPY abliterate ./abliterate
+COPY quantize ./quantize
+COPY eval ./eval
+
+CMD ["python", "train/train_lora.py", "--config", "train/config.yaml"]
