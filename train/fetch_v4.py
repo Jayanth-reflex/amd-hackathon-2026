@@ -105,9 +105,71 @@ def normalize_record(record: dict) -> str | None:
             {"role": "user", "content": "Summarize this:\n" + record["Text"]},
             {"role": "assistant", "content": record["Summary"]},
         ])
+    # rishiai dataset — Judgment/Summary
+    if "Judgment" in record and "Summary" in record:
+        return chatml_wrap([
+            {"role": "user", "content": "Summarize this Indian court judgment:\n" + record["Judgment"][:8000]},
+            {"role": "assistant", "content": record["Summary"]},
+        ])
     # InJudgements: 'IndianKanoon URL', 'full_text'
     if "full_text" in record and isinstance(record["full_text"], str):
         return chatml_wrap([{"role": "assistant", "content": record["full_text"]}])
+    # Sharathhebbar24/Indian-Constitution — article_id, article_desc
+    if "article_id" in record and "article_desc" in record:
+        return chatml_wrap([
+            {"role": "user", "content": f"Article {record['article_id']} of the Indian Constitution:"},
+            {"role": "assistant", "content": str(record["article_desc"])},
+        ])
+    # PubMedQA — question + long_answer (or final_decision yes/no/maybe + context)
+    if "question" in record and ("long_answer" in record or "final_decision" in record):
+        ans = record.get("long_answer") or record.get("final_decision", "")
+        ctx = ""
+        if "context" in record and isinstance(record["context"], dict):
+            ctx_list = record["context"].get("contexts") or []
+            ctx = "\n\n".join(ctx_list)
+        prompt = record["question"]
+        if ctx:
+            prompt = f"Context:\n{ctx}\n\nQuestion: {record['question']}"
+        return chatml_wrap([
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": str(ans)},
+        ])
+    # MedMCQA — question, opa/opb/opc/opd, cop (correct option index), exp (explanation)
+    if "question" in record and "opa" in record:
+        opts = "\n".join([f"{l}. {record.get(k, '')}" for l, k in zip("ABCD", ["opa", "opb", "opc", "opd"])])
+        cop_idx = record.get("cop", 0)
+        correct_letter = "ABCD"[cop_idx] if isinstance(cop_idx, int) and 0 <= cop_idx < 4 else "?"
+        correct = record.get(["opa", "opb", "opc", "opd"][cop_idx], "") if isinstance(cop_idx, int) else ""
+        exp = record.get("exp") or ""
+        ans = f"Answer: {correct_letter}. {correct}"
+        if exp:
+            ans += f"\n\nExplanation: {exp}"
+        return chatml_wrap([
+            {"role": "user", "content": f"{record['question']}\n\n{opts}"},
+            {"role": "assistant", "content": ans},
+        ])
+    # GameTheory-Bench — problem + solution or answer
+    if "problem" in record and ("solution" in record or "answer" in record):
+        ans = record.get("solution") or record.get("answer", "")
+        if isinstance(ans, dict):
+            ans = json.dumps(ans, indent=2)
+        return chatml_wrap([
+            {"role": "user", "content": str(record["problem"])},
+            {"role": "assistant", "content": str(ans)},
+        ])
+    # FLORES-200 — sentence_<lang>_<script> parallel pairs
+    flores_keys = [k for k in record.keys() if k.startswith("sentence_")]
+    if len(flores_keys) >= 2:
+        # Pick English + one other
+        eng_key = next((k for k in flores_keys if "eng" in k.lower()), None)
+        other_keys = [k for k in flores_keys if k != eng_key]
+        if eng_key and other_keys:
+            other = other_keys[0]
+            other_lang = other.replace("sentence_", "").replace("_Latn", "").replace("_Deva", "").replace("_Beng", "")
+            return chatml_wrap([
+                {"role": "user", "content": f"Translate this English sentence to {other_lang}: {record[eng_key]}"},
+                {"role": "assistant", "content": record[other]},
+            ])
     return None
 
 
