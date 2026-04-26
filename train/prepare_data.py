@@ -101,6 +101,9 @@ def fetch_hf(source_id: str, split: str, target_tokens: int, raw_path: Path) -> 
     from datasets import load_dataset
     log.info("  hf fetching: %s [%s] target=%d tokens", source_id, split, target_tokens)
     try:
+        # Newer datasets versions reject trust_remote_code; try without first
+        ds = load_dataset(source_id, split=split, streaming=True)
+    except TypeError:
         ds = load_dataset(source_id, split=split, streaming=True, trust_remote_code=True)
     except Exception as e:
         log.warning("  hf FAILED: %s — %s", source_id, e)
