@@ -73,6 +73,34 @@ Will append next snapshot at step ~200 (~02:30 IST) or step ~424 (25% mid-eval m
 
 ---
 
+### 2026-04-27 01:54 IST — Step 160 / 1,696 (9.4%)
+
+Pulled via `wandb.Api()` `scan_history()` from inside training-run container (the GraphQL `sampledHistory` returns 500 on this run, needs the SDK). Heartbeat at 20:24:35 UTC.
+
+| Step | Loss | Grad norm | LR |
+|---|---|---|---|
+| 110 | 1.006 | 0.111 | 4.984e-5 |
+| 120 | 1.149 | 0.110 | 4.978e-5 |
+| 130 | **0.970** | 0.093 | 4.972e-5 |
+| 140 | 1.053 | 0.100 | 4.964e-5 |
+| 150 | 1.062 | 0.102 | 4.956e-5 |
+| 160 | 1.096 | 0.101 | 4.946e-5 |
+
+**Observations:**
+- **First sub-1.0 loss at step 130 (0.970).** Loss is now oscillating in a tight 0.97–1.10 band with no upward drift — classic post-warmup fine-tuning behavior.
+- Grad norms locked into **0.09–0.11**: model is no longer making large parameter updates, just small refinements. This is exactly what we want.
+- LR cosine decay tracking precisely: 4.984e-5 → 4.946e-5 in 50 steps (peak 5e-5 at step 50). On schedule for ~3.5e-5 by 25% (step 424) and ~0 by step 1696.
+- Per-step rate **41.6s** (150 steps in 104 min) — no degradation from longer-context packing.
+- **Loss-spike kill-switch is armed but not close to triggering**: would need recent-50 mean to exceed 1.3× of prior-200 mean. Recent-50 ~1.05, prior-200 not yet computable but trending similar. Safe.
+
+**Updated ETA:**
+- Remaining: 1,696 - 160 = **1,536 steps** × 41.6s = 63,898s = **17.7 hours**
+- Done at: 20:24 UTC + 17.7h = **~14:09 UTC = 19:39 IST Apr 27** (within 7 min of original estimate)
+
+Will append next snapshot at step ~424 (25% mid-eval marker, ~05:00 IST) or sooner if anything moves.
+
+---
+
 ## How to fetch a fresh snapshot
 
 ```bash
