@@ -1,24 +1,27 @@
 # Training config for amd-hackathon-2026
-# Aggressive sprint config: 2 epochs / ~200M tokens, Unsloth bf16 LoRA, MI300X (192 GB HBM3)
-# Loaded by train/train_lora.py — DO NOT change without re-running H+2 smoke gate.
+# Revision 5.1 — Option B (8K seq_len, 80M tokens, flash-attn-2)
+# Locked dataset blend per Jayanth's 2026-04-26 turn.
 
 base_model: unsloth/Qwen3.6-35B-A3B
 fallback_models:
   - unsloth/Qwen3.5-35B-A3B   # tier-2 if Qwen3.6 fails H+2 smoke
-  - unsloth/Qwen3-30B-A3B     # tier-3, more battle-tested in Unsloth+llama.cpp
+  - unsloth/Qwen3-30B-A3B     # tier-3, more battle-tested
 
 output:
-  hf_repo: Jayanth/Qwen3.6-35B-A3B-Domain          # merged, pre-Heretic
-  aggressive_repo: Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive  # post-Heretic
+  hf_repo: Jayanth/Qwen3.6-35B-A3B-Domain
+  aggressive_repo: Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive
   gguf_repo: Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF
   local_dir: /workspace/out/lora_adapter
+  base_local: /data/hf/Qwen3.6-35B-A3B   # already downloaded on droplet
 
 # Loader (Unsloth FastVisionModel — Qwen3.6 is multimodal)
 loader:
   max_seq_length: 8192
   load_in_4bit: false
-  load_in_16bit: true        # bf16 path; QLoRA NOT recommended for MoE per Unsloth docs
+  load_in_16bit: true
   full_finetuning: false
+  attn_implementation: flash_attention_2
+  use_cache_during_train: false
 
 # LoRA
 lora:
@@ -26,28 +29,21 @@ lora:
   alpha: 16
   dropout: 0.0
   bias: none
-  target_modules:            # standard list — NOT target_parameters (latter breaks vLLM load)
-    - q_proj
-    - k_proj
-    - v_proj
-    - o_proj
-    - gate_proj
-    - up_proj
-    - down_proj
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
   use_gradient_checkpointing: unsloth
   random_state: 3407
-  freeze_vision_encoder: true   # text-only domain LoRA; mmproj passes through unchanged
-  freeze_moe_router: true       # Unsloth design choice — DO NOT override
+  freeze_vision_encoder: true
+  freeze_moe_router: true
 
-# Training (SFTConfig)
+# Training (Option B target: ~80M tokens, ~18h on MI300X w/ flash-attn-2)
 training:
-  num_train_epochs: 2          # bumped from 1 — saturate 48h GPU budget
+  num_train_epochs: 1               # single pass at 8K seq
   per_device_train_batch_size: 2
   gradient_accumulation_steps: 4    # effective batch = 8
   learning_rate: 5.0e-5
   lr_scheduler_type: cosine
   warmup_steps: 50
-  optim: adamw_8bit            # bitsandbytes-rocm on MI300X
+  optim: adamw_8bit
   weight_decay: 0.01
   max_grad_norm: 1.0
   logging_steps: 10
@@ -55,21 +51,18 @@ training:
   save_total_limit: 3
   bf16: true
   fp16: false
-  dataloader_num_workers: 0    # avoids fork-deadlock with HF Rust tokenizer threads
-  dataset_num_proc: 1          # same fix
+  dataloader_num_workers: 0
+  dataset_num_proc: 1
   group_by_length: true
-  report_to:
-    - wandb
-    - tensorboard
-  run_name: qwen36-domain-aggressive-2epoch
-  output_dir: /workspace/out/lora_adapter
+  report_to: [wandb, tensorboard]
+  run_name: qwen36-domain-aggressive-rev5.1
   seed: 3407
 
 # W&B
 wandb:
   project: amd-hackathon-2026
   entity: jayanth-reflex
-  tags: [mi300x, qwen3.6, lora, bf16, hackathon-2026]
+  tags: [mi300x, qwen3.6, lora, bf16, hackathon-2026, rev5.1]
 
 # Mid-eval callback (25/50/75/100% checkpoints)
 mid_eval:
@@ -84,7 +77,7 @@ loss_spike:
   rolling_mean_window: 50
   comparison_window: 200
   ratio_threshold: 1.3
-  action: pause_dump_revert    # alternatives: lower_lr, kill
+  action: pause_dump_revert
 
 # Smoke gate (H+2)
 smoke:
@@ -92,3 +85,203 @@ smoke:
   rows: 1000
   expect_loss_decrease: true
   max_memory_gb: 90
+
+# ============================================================================
+# Dataset blend — Revision 5.1 (locked 2026-04-26)
+# Total: 80,000,000 tokens
+# Macro: General 55% / Reasoning 7% / Tools 6% / Domain 32%
+# ============================================================================
+blend:
+  total_tokens: 80_000_000
+
+  # ---------- A. GENERAL INSTRUCT — 55% = 44.0M tokens ----------
+  general:
+    share: 0.55
+    sources:
+      - {id: "teknium/OpenHermes-2.5",                            type: hf, share: 0.10150, split: train}
+      - {id: "allenai/tulu-3-sft-mixture",                        type: hf, share: 0.08460, split: train}
+      - {id: "HuggingFaceH4/ultrachat_200k",                      type: hf, share: 0.06770, split: train_sft}
+      - {id: "cognitivecomputations/dolphin-r1",                  type: hf, share: 0.05080, split: reasoning-deepseek}
+      - {id: "allenai/WildChat-1M",                               type: hf, share: 0.05080, split: train}
+      - {id: "OpenAssistant/oasst2",                              type: hf, share: 0.04230, split: train}
+      - {id: "Open-Orca/SlimOrca",                                type: hf, share: 0.04230, split: train}
+      - {id: "LDJnr/Capybara",                                    type: hf, share: 0.03380, split: train}
+      - {id: "m-a-p/CodeFeedback-Filtered-Instruction",           type: hf, share: 0.02540, split: train}
+      - {id: "cognitivecomputations/SystemChat-2.0",              type: hf, share: 0.01690, split: train}
+      - {id: "Magpie-Align/Magpie-Llama-3.1-Pro-300K-Filtered",   type: hf, share: 0.01690, split: train}
+      - {id: "jondurbin/airoboros-3.2",                           type: hf, share: 0.01690, split: train}
+
+  # ---------- B. REASONING / MATH — 7% = 5.6M tokens ----------
+  reasoning:
+    share: 0.07
+    sources:
+      - {id: "meta-math/MetaMathQA",                              type: hf, share: 0.02625, split: train}
+      - {id: "microsoft/orca-math-word-problems-200k",            type: hf, share: 0.02625, split: train}
+      - {id: "TIGER-Lab/MathInstruct",                            type: hf, share: 0.01750, split: train}
+
+  # ---------- C. TOOL CALLING — 6% = 4.8M tokens ----------
+  tools:
+    share: 0.06
+    sources:
+      - {id: "NousResearch/hermes-function-calling-v1",           type: hf, share: 0.02570, split: train}
+      - {id: "Salesforce/xlam-function-calling-60k",              type: hf, share: 0.01710, split: train}
+      - {id: "glaiveai/glaive-function-calling-v2",               type: hf, share: 0.01710, split: train}
+
+  # ---------- D. DOMAIN SPECIALTY — 32% = 25.6M tokens ----------
+  domain:
+    share: 0.32
+
+    indian_law:
+      share: 0.010
+      sources:
+        - {id: "india_code_acts",                  type: scrape, url_seed: "https://www.indiacode.nic.in/", focus: "BNS,BNSS,BSA"}
+        - {id: "indian_kanoon",                    type: scrape, url_seed: "https://api.indiankanoon.org/search/", focus: "supreme_court,high_court_2020+"}
+
+    indian_taxation:
+      share: 0.010
+      sources:
+        - {id: "cbdt_circulars",                   type: scrape, url_seed: "https://www.incometaxindia.gov.in/Pages/communications/circulars.aspx"}
+        - {id: "cbic_gst",                         type: scrape, url_seed: "https://cbic-gst.gov.in/cgst-act.html"}
+        - {id: "synthetic_qa_taxation",            type: synthetic, teacher: "deepseek-v3", base_corpus: "above"}
+
+    pharmacology:
+      share: 0.010
+      sources:
+        - {id: "drugbank_open",                    type: api, endpoint: "https://go.drugbank.com/releases/latest"}
+        - {id: "openfda_labels",                   type: api, endpoint: "https://api.fda.gov/drug/label.json"}
+        - {id: "ncbi_pmc_oa_pharmacology",         type: api, endpoint: "https://www.ncbi.nlm.nih.gov/pmc/tools/openftlist/", filter: "pharmacology"}
+
+    quantitative_finance:
+      share: 0.015
+      sources:
+        - {id: "sebi_papers",                      type: scrape, url_seed: "https://www.sebi.gov.in/sebiweb/home/HomeAction.do?doListing=yes&sid=1&ssid=4&smid=0"}
+        - {id: "nse_research",                     type: scrape, url_seed: "https://www.nseindia.com/research"}
+        - {id: "arxiv_q-fin",                      type: arxiv, query: "cat:q-fin.PR OR cat:q-fin.MF OR cat:q-fin.RM"}
+        - {id: "synthetic_qa_indian_qfin",         type: synthetic, teacher: "deepseek-v3"}
+
+    engineering:
+      share: 0.040
+      # Equal split across 5 sub-disciplines @ 0.8% each
+      # NPTEL transcripts EXCLUDED per Jayanth — too many filler words
+      subdisciplines:
+        eee:    {share: 0.008, sources: ["openstax_physics_calc","bccampus_eee","arxiv_eess.SY","mit_ocw_cc-by_eee"]}
+        ece:    {share: 0.008, sources: ["bccampus_ece","arxiv_eess.SP","arxiv_cs.AR","mit_ocw_cc-by_ece"]}
+        cse:    {share: 0.008, sources: ["openstax_calculus","bccampus_cs","arxiv_cs.OS","arxiv_cs.DC","mit_ocw_cc-by_cs"]}
+        mech:   {share: 0.008, sources: ["openstax_physics","bccampus_mech","arxiv_physics.flu-dyn","mit_ocw_cc-by_mech"]}
+        civil:  {share: 0.008, sources: ["bccampus_civil","openstax_engineering","mit_ocw_cc-by_civil","wikibooks_civil"]}
+
+    geopolitics:
+      share: 0.005
+      sources:
+        - {id: "open_ir_scholarship",              type: arxiv, query: "cat:econ.GN cat:cs.CY"}
+        - {id: "ecfr_open_papers",                 type: scrape, url_seed: "https://ecfr.eu/publications/"}
+        - {id: "cfr_open",                         type: scrape, url_seed: "https://www.cfr.org/research"}
+
+    # ★ TOP-OF-LINE PRIORITY per Jayanth ★
+    game_theory:
+      share: 0.050
+      sub_areas:
+        mechanism_design_auction:    {share: 0.0110, sources: ["myerson_papers","klemperer_lectures","milgrom_open","arxiv_econ.TH_mech_design"]}
+        algorithmic_computational:   {share: 0.0100, sources: ["agt_cambridge_chapters","arxiv_cs.GT","easley_kleinberg_full_text"]}
+        behavioral_decision:         {share: 0.0075, sources: ["kahneman_tversky_papers","camerer_lectures","prospect_theory_canon"]}
+        network_games:               {share: 0.0050, sources: ["jackson_social_networks","easley_kleinberg_chapters_8-12"]}
+        climate_public_goods:        {share: 0.0050, sources: ["barrett_open_papers","nordhaus_open","ostrom_commons"]}
+        evolutionary_biological:     {share: 0.0040, sources: ["maynard_smith_canonical","skyrms_open","replicator_tutorials"]}
+        cooperative_bargaining:      {share: 0.0040, sources: ["shapley_papers","nash_bargaining","roth_matching_markets"]}
+        ai_ml_applications:          {share: 0.0035, sources: ["arxiv_cs.MA_recent","deepmind_opa","anthropic_alignment_open"]}
+
+    osint_cyber:
+      share: 0.025
+      sources:
+        - {id: "mitre_attack",                     type: api, endpoint: "https://github.com/mitre/cti.git"}
+        - {id: "mitre_d3fend",                     type: api, endpoint: "https://d3fend.mitre.org/api"}
+        - {id: "bellingcat_methodology",           type: scrape, url_seed: "https://www.bellingcat.com/category/resources/"}
+        - {id: "public_cti_feeds",                 type: feed, sources: ["alienvault","abuseipdb_open","mitre_threats"]}
+
+    psychology:
+      share: 0.015
+      sub_areas:
+        top_researcher_oa_papers:    {share: 0.0045, sources: ["kahneman_tversky","cialdini","bandura","csikszentmihalyi","pinker","haidt","dweck_oa_only"]}
+        a_to_z_open_textbooks:       {share: 0.00375, sources: ["openstax_psychology","stangor_intro_psychology_cc","tom_stanford_discovering","dsm5_educational_summaries"]}
+        cia_declassified:            {share: 0.0030, sources: ["heuer_psychology_intel_analysis","heuer_pherson_structured_techniques","kubark_1963_declass","mkultra_released"]}
+        us_psyop_bau:                {share: 0.00225, sources: ["fm_3-05.30_psyop","jp_3-13.2","fbi_bau_crime_classification_academic"]}
+        mossad_israeli_oc_open:      {share: 0.0015, sources: ["meir_amit_memoirs","halevy_memoirs","pardo_memoirs","idf_psyop_doctrine_academic"]}
+
+    geospatial:
+      share: 0.020
+      sources:
+        - {id: "osm_tag_wiki",                     type: scrape, url_seed: "https://wiki.openstreetmap.org/wiki/Map_features"}
+        - {id: "isro_bhuvan_tutorials",            type: scrape, url_seed: "https://bhuvan-app1.nrsc.gov.in/help/"}
+        - {id: "gdal_docs",                        type: scrape, url_seed: "https://gdal.org/"}
+
+    survival_skills:
+      share: 0.050
+      sub_areas:
+        fire_cooking_offgrid:        {share: 0.006, sources: ["fm_21-76_ch5","wikipedia_survival","pg_camp_life_woods_1907"]}
+        water_filtration:            {share: 0.0075, sources: ["practical_action_water","cdc_water","who_water","wikipedia_water_purification"]}
+        edible_plants_foraging:      {share: 0.0075, sources: ["usda_plant_db","wikipedia_foraging","permaculture_wikis"]}
+        wilderness_medicine:         {share: 0.0075, sources: ["wms_open_curriculum","who_first_aid","wikipedia_wilderness_medicine"]}
+        shelter_construction:        {share: 0.005, sources: ["fm_3-05.70","boy_scout_handbook_1911_pd","bushcraft_wikis"]}
+        comms_offgrid:               {share: 0.0075, sources: ["arrl_ham_curriculum_cc","fm_24-19_signaling","meshtastic_docs"]}
+        navigation_lowtech:          {share: 0.005, sources: ["fm_3-25.26","open_orienteering_guides"]}
+        urban_disaster_prep:         {share: 0.004, sources: ["fema_preparedness","red_cross_open"]}
+
+    history_world_india:
+      share: 0.030
+      sub_areas:
+        ancient:                     {share: 0.0075, sources: ["wikipedia_ancient","pg19_ancient","ncert_ancient_history"]}
+        medieval:                    {share: 0.0075, sources: ["wikipedia_medieval","pg19_medieval","ncert_medieval"]}
+        early_modern:                {share: 0.0075, sources: ["wikipedia_early_modern","pg19_renaissance","ncert_modern_part1"]}
+        modern_post_1900:            {share: 0.0075, sources: ["wikipedia_modern","ncert_indian_modern","post_1947_india_open"]}
+
+    defense_forces:
+      share: 0.020
+      sub_areas:
+        india_armed_forces:          {share: 0.005, sources: ["wikipedia_indian_army","wikipedia_indian_navy","wikipedia_iaf","ia_doctrine_open"]}
+        tier1_us_china_russia:       {share: 0.006, sources: ["wikipedia_us_military","cia_factbook_military","us_dod_jp_fm","wikipedia_pla","wikipedia_russian_armed_forces"]}
+        nato_uk_fr_de:               {share: 0.003, sources: ["wikipedia_uk_armed_forces","wikipedia_french_armed","wikipedia_bundeswehr","nato_open_doctrine"]}
+        regional_powers:             {share: 0.003, sources: ["wikipedia_pakistan_army","wikipedia_idf","wikipedia_rok_armed","wikipedia_jsdf","wikipedia_turkish_armed","wikipedia_iranian_armed"]}
+        doctrine_warfare_history:    {share: 0.003, sources: ["sun_tzu_pd","clausewitz_pd","modern_war_studies_oa"]}
+
+    languages_practical:
+      share: 0.025
+      languages:
+        hindi:           {share: 0.0035, sources: ["flores200_hin","tatoeba_hin","wiktionary_hin"]}
+        spanish:         {share: 0.0030, sources: ["flores200_spa","tatoeba_spa","wiktionary_spa"]}
+        arabic:          {share: 0.00275, sources: ["flores200_arb","tatoeba_arb","wiktionary_arb"]}
+        bengali:         {share: 0.0025, sources: ["flores200_ben","tatoeba_ben","wiktionary_ben"]}
+        telugu:          {share: 0.00225, sources: ["flores200_tel","tatoeba_tel","wiktionary_tel"]}   # NEW per Jayanth
+        portuguese:      {share: 0.00225, sources: ["flores200_por","tatoeba_por","wiktionary_por"]}
+        german:          {share: 0.0020, sources: ["flores200_deu","tatoeba_deu","wiktionary_deu"]}
+        russian:         {share: 0.0020, sources: ["flores200_rus","tatoeba_rus","wiktionary_rus"]}
+        french:          {share: 0.00175, sources: ["flores200_fra","tatoeba_fra","wiktionary_fra"]}
+        japanese:        {share: 0.00175, sources: ["flores200_jpn","tatoeba_jpn","wiktionary_jpn"]}
+        mandarin:        {share: 0.00125, sources: ["flores200_zho","tatoeba_cmn"]}                    # 5% of D14, dropped per Jayanth (Qwen already has it)
+
+# Synthetic-data caveat: thin-corpus domains use a non-abliterated teacher
+synthetic:
+  teacher_model: "deepseek-ai/DeepSeek-V3"      # low-refusal teacher, large context
+  generate_format: "chatml"
+  max_tokens_per_qa: 1024
+  ratio_to_raw: 0.5                             # 1 synthetic row per 2 raw rows
+  applies_to:
+    - indian_taxation
+    - quantitative_finance
+    - engineering
+    - psychology.cia_declassified
+    - psychology.mossad_israeli_oc_open
+    - defense_forces.india_armed_forces
+
+# License hygiene
+license_filter:
+  allow:
+    - cc-by
+    - cc-by-sa
+    - cc0
+    - public_domain
+    - mit
+    - apache-2.0
+  deny:
+    - cc-by-nc          # incompatible with our Apache-2.0 weights downstream
+    - proprietary
+    - unknown
