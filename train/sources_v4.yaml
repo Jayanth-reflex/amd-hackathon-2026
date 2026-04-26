@@ -1,0 +1,156 @@
+# Domain-source manifest v4 — curated from research output 2026-04-26
+# License rule: only Apache-2.0, MIT, CC-BY, CC-BY-SA, CC0, PD compatible with downstream Apache-2.0 model weights.
+# All sources verified license-clean before inclusion.
+
+sources:
+  # ============================================================================
+  # A. INDIAN LAW (target ~6M tokens, all Apache-2.0 unless noted)
+  # ============================================================================
+  - {id: "opennyaiorg/aalap_instruction_dataset", type: hf, license: "mostly-Apache",     domain: "indian_law",     split: train, target_tokens: 2_000_000}
+  - {id: "opennyaiorg/InJudgements_dataset",      type: hf, license: "Apache-2.0",         domain: "indian_law",     split: train, target_tokens: 2_000_000}
+  - {id: "viber1/indian-law-dataset",             type: hf, license: "Apache-2.0",         domain: "indian_law",     split: train, target_tokens: 800_000}
+  - {id: "rishiai/indian-court-judgements-and-its-summaries", type: hf, license: "Apache-2.0", domain: "indian_law", split: train, target_tokens: 1_000_000}
+  - {id: "nisaar/Articles_Constitution_3300_Instruction_Set", type: hf, license: "Apache-2.0", domain: "indian_law", split: train, target_tokens: 200_000}
+  - {id: "nisaar/Constitution_Of_India_Instruction_Set",      type: hf, license: "Apache-2.0", domain: "indian_law", split: train, target_tokens: 250_000}
+  - {id: "nisaar/Lawyer_GPT_India",                            type: hf, license: "Apache-2.0", domain: "indian_law", split: train, target_tokens: 50_000}
+  - {id: "nisaar/Constitution_of_India",                       type: hf, license: "Apache-2.0", domain: "indian_law", split: train, target_tokens: 80_000}
+  - {id: "Sharathhebbar24/Indian-Constitution",                type: hf, license: "Apache-2.0", domain: "indian_law", split: train, target_tokens: 100_000}
+
+  # ============================================================================
+  # B. PHARMACOLOGY (target ~3M tokens)
+  # ============================================================================
+  - {id: "qiaojin/PubMedQA",                       type: hf,   license: "MIT",        domain: "pharmacology", split: pqa_artificial, target_tokens: 2_000_000}
+  - {id: "openlifescienceai/medmcqa",              type: hf,   license: "Apache-2.0", domain: "pharmacology", split: train,          target_tokens: 800_000, filter_subject: "Pharmacology"}
+  - {id: "medalpaca/medical_meadow_medqa",         type: hf,   license: "MIT",        domain: "pharmacology", split: train,          target_tokens: 200_000}
+  - {id: "allenai/drug-combo-extraction",          type: hf,   license: "Apache-2.0", domain: "pharmacology", split: train,          target_tokens: 50_000}
+
+  # ============================================================================
+  # C. GAME THEORY (target ~4M tokens — TOP PRIORITY)
+  # ============================================================================
+  - {id: "Alogotron/GameTheory-Bench",             type: hf,   license: "Apache-2.0", domain: "game_theory",  split: train,          target_tokens: 1_500_000}
+  - {id: "Alogotron/game-theory-business-strategy",type: hf,   license: "MIT",        domain: "game_theory",  split: train,          target_tokens: 50_000}
+  - {id: "teknium/dataforge-economics",            type: hf,   license: "MIT",        domain: "game_theory",  split: train,          target_tokens: 500_000}
+
+  # ============================================================================
+  # D. HISTORY (target ~3M tokens, mostly Project Gutenberg PD)
+  # ============================================================================
+  - {id: "chungimungi/Indian-History",             type: hf,   license: "verify",     domain: "history",      split: train,          target_tokens: 100_000}
+  - {id: "BashitAli/Indian_history",               type: hf,   license: "verify",     domain: "history",      split: train,          target_tokens: 100_000}
+  - {id: "pg_sun_tzu",                             type: pg_txt, license: "PD",       domain: "history",      url: "https://www.gutenberg.org/cache/epub/132/pg132.txt", target_tokens: 80_000}
+  - {id: "pg_clausewitz",                          type: pg_txt, license: "PD",       domain: "history",      url: "https://www.gutenberg.org/cache/epub/1946/pg1946.txt", target_tokens: 250_000}
+  - {id: "pg_mahabharata_v1",                      type: pg_txt, license: "PD",       domain: "history",      url: "https://www.gutenberg.org/cache/epub/15474/pg15474.txt", target_tokens: 500_000}
+  - {id: "pg_mahabharata_v2",                      type: pg_txt, license: "PD",       domain: "history",      url: "https://www.gutenberg.org/cache/epub/15475/pg15475.txt", target_tokens: 500_000}
+  - {id: "pg_plutarch_lives",                      type: pg_txt, license: "PD",       domain: "history",      url: "https://www.gutenberg.org/cache/epub/674/pg674.txt", target_tokens: 600_000}
+  - {id: "pg_max_muller_india",                    type: pg_txt, license: "PD",       domain: "history",      url: "https://www.gutenberg.org/cache/epub/20847/pg20847.txt", target_tokens: 100_000}
+  - {id: "pg_sewell_vijayanagar",                  type: pg_txt, license: "PD",       domain: "history",      url: "https://www.gutenberg.org/cache/epub/3310/pg3310.txt", target_tokens: 150_000}
+  - {id: "pg_dutt_mahabharata",                    type: pg_txt, license: "PD",       domain: "history",      url: "https://www.gutenberg.org/cache/epub/19630/pg19630.txt", target_tokens: 100_000}
+
+  # ============================================================================
+  # E. SURVIVAL SKILLS (target ~3M tokens, PG + later FM PDFs)
+  # ============================================================================
+  - {id: "pg_boy_scouts_handbook",                 type: pg_txt, license: "PD",       domain: "survival",     url: "https://www.gutenberg.org/cache/epub/29558/pg29558.txt", target_tokens: 250_000}
+  - {id: "pg_sears_woodcraft",                     type: pg_txt, license: "PD",       domain: "survival",     url: "https://www.gutenberg.org/cache/epub/24579/pg24579.txt", target_tokens: 80_000}
+  - {id: "pg_white_camp_and_trail",                type: pg_txt, license: "PD",       domain: "survival",     url: "https://www.gutenberg.org/cache/epub/32950/pg32950.txt", target_tokens: 120_000}
+  - {id: "pg_white_the_forest",                    type: pg_txt, license: "PD",       domain: "survival",     url: "https://www.gutenberg.org/cache/epub/9376/pg9376.txt", target_tokens: 100_000}
+  - {id: "pg_gould_camp_out",                      type: pg_txt, license: "PD",       domain: "survival",     url: "https://www.gutenberg.org/cache/epub/17575/pg17575.txt", target_tokens: 60_000}
+
+  # ============================================================================
+  # F. DEFENSE FORCES (target ~2M tokens, mostly Wikipedia)
+  # ============================================================================
+  - {id: "wp_military_us",            type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "United_States_Armed_Forces", target_tokens: 60_000}
+  - {id: "wp_military_china",         type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "People's_Liberation_Army", target_tokens: 60_000}
+  - {id: "wp_military_russia",        type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Russian_Armed_Forces", target_tokens: 60_000}
+  - {id: "wp_military_india",         type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Indian_Armed_Forces", target_tokens: 80_000}
+  - {id: "wp_military_pakistan",      type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Pakistan_Armed_Forces", target_tokens: 50_000}
+  - {id: "wp_military_uk",            type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "British_Armed_Forces", target_tokens: 50_000}
+  - {id: "wp_military_france",        type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "French_Armed_Forces", target_tokens: 50_000}
+  - {id: "wp_military_germany",       type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Bundeswehr", target_tokens: 40_000}
+  - {id: "wp_military_israel",        type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Israel_Defense_Forces", target_tokens: 60_000}
+  - {id: "wp_military_japan",         type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Japan_Self-Defense_Forces", target_tokens: 40_000}
+  - {id: "wp_military_skorea",        type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Republic_of_Korea_Armed_Forces", target_tokens: 40_000}
+  - {id: "wp_military_turkey",        type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Turkish_Armed_Forces", target_tokens: 40_000}
+  - {id: "wp_military_iran",          type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Islamic_Republic_of_Iran_Armed_Forces", target_tokens: 40_000}
+  - {id: "wp_indian_army",            type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Indian_Army", target_tokens: 50_000}
+  - {id: "wp_indian_navy",            type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Indian_Navy", target_tokens: 50_000}
+  - {id: "wp_indian_air_force",       type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Indian_Air_Force", target_tokens: 50_000}
+  - {id: "wp_strategic_forces_command_india", type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Strategic_Forces_Command_(India)", target_tokens: 20_000}
+  - {id: "wp_nato",                   type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "NATO", target_tokens: 60_000}
+  - {id: "wp_qsd",                    type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Quad_Security_Dialogue", target_tokens: 20_000}
+  - {id: "wp_military_doctrine",      type: wikipedia, license: "CC-BY-SA-4.0", domain: "defense", title: "Military_doctrine", target_tokens: 20_000}
+
+  # ============================================================================
+  # G. PSYCHOLOGY + INTEL (target ~2M tokens)
+  # ============================================================================
+  # Top-researcher OA papers (Wikipedia summaries since direct PDFs require pdfplumber)
+  - {id: "wp_kahneman_tversky",       type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Daniel_Kahneman", target_tokens: 30_000}
+  - {id: "wp_prospect_theory",        type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Prospect_theory", target_tokens: 30_000}
+  - {id: "wp_cognitive_biases",       type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "List_of_cognitive_biases", target_tokens: 50_000}
+  - {id: "wp_self_efficacy",          type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Self-efficacy", target_tokens: 25_000}
+  - {id: "wp_flow_psychology",        type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Flow_(psychology)", target_tokens: 30_000}
+  - {id: "wp_growth_mindset",         type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Mindset", target_tokens: 20_000}
+  - {id: "wp_moral_foundations",      type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Moral_foundations_theory", target_tokens: 30_000}
+  - {id: "wp_psychology_intel_analysis",   type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Psychology_of_Intelligence_Analysis", target_tokens: 20_000}
+  - {id: "wp_kubark",                 type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "KUBARK", target_tokens: 15_000}
+  - {id: "wp_mkultra",                type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "MKUltra", target_tokens: 30_000}
+  - {id: "wp_cia",                    type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Central_Intelligence_Agency", target_tokens: 50_000}
+  - {id: "wp_mossad",                 type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Mossad", target_tokens: 50_000}
+  - {id: "wp_psyops",                 type: wikipedia, license: "CC-BY-SA-4.0", domain: "psychology", title: "Psychological_warfare", target_tokens: 30_000}
+
+  # ============================================================================
+  # H. GEOPOLITICS (target ~1M tokens via Wikipedia)
+  # ============================================================================
+  - {id: "wp_geopolitics",            type: wikipedia, license: "CC-BY-SA-4.0", domain: "geopolitics", title: "Geopolitics", target_tokens: 30_000}
+  - {id: "wp_realpolitik",            type: wikipedia, license: "CC-BY-SA-4.0", domain: "geopolitics", title: "Realpolitik", target_tokens: 20_000}
+  - {id: "wp_balance_of_power",       type: wikipedia, license: "CC-BY-SA-4.0", domain: "geopolitics", title: "Balance_of_power_(international_relations)", target_tokens: 25_000}
+  - {id: "wp_cold_war",               type: wikipedia, license: "CC-BY-SA-4.0", domain: "geopolitics", title: "Cold_War", target_tokens: 60_000}
+  - {id: "wp_brics",                  type: wikipedia, license: "CC-BY-SA-4.0", domain: "geopolitics", title: "BRICS", target_tokens: 30_000}
+  - {id: "wp_quad",                   type: wikipedia, license: "CC-BY-SA-4.0", domain: "geopolitics", title: "Quadrilateral_Security_Dialogue", target_tokens: 30_000}
+  - {id: "wp_indian_foreign_policy",  type: wikipedia, license: "CC-BY-SA-4.0", domain: "geopolitics", title: "Foreign_relations_of_India", target_tokens: 50_000}
+
+  # ============================================================================
+  # I. SURVIVAL — additional Wikipedia coverage
+  # ============================================================================
+  - {id: "wp_survival_skills",        type: wikipedia, license: "CC-BY-SA-4.0", domain: "survival", title: "Survival_skills", target_tokens: 30_000}
+  - {id: "wp_bushcraft",              type: wikipedia, license: "CC-BY-SA-4.0", domain: "survival", title: "Bushcraft", target_tokens: 20_000}
+  - {id: "wp_water_purification",     type: wikipedia, license: "CC-BY-SA-4.0", domain: "survival", title: "Portable_water_purification", target_tokens: 20_000}
+  - {id: "wp_fire_making",            type: wikipedia, license: "CC-BY-SA-4.0", domain: "survival", title: "Fire_making", target_tokens: 15_000}
+  - {id: "wp_first_aid",              type: wikipedia, license: "CC-BY-SA-4.0", domain: "survival", title: "First_aid", target_tokens: 30_000}
+  - {id: "wp_amateur_radio",          type: wikipedia, license: "CC-BY-SA-4.0", domain: "survival", title: "Amateur_radio", target_tokens: 30_000}
+  - {id: "wp_survivalism",            type: wikipedia, license: "CC-BY-SA-4.0", domain: "survival", title: "Survivalism", target_tokens: 20_000}
+  - {id: "wp_celestial_navigation",   type: wikipedia, license: "CC-BY-SA-4.0", domain: "survival", title: "Celestial_navigation", target_tokens: 20_000}
+
+  # ============================================================================
+  # J. LANGUAGES (target ~2M tokens — facebook/flores via HF dataset)
+  # ============================================================================
+  # Note: Mandarin DROPPED per Jayanth — Qwen base already heavy on Chinese
+  - {id: "facebook/flores",           type: hf, license: "CC-BY-SA-4.0", domain: "languages", split: dev, target_tokens: 500_000}
+
+  # ============================================================================
+  # K. GEOSPATIAL (target ~500k tokens)
+  # ============================================================================
+  - {id: "wp_geographic_information_system", type: wikipedia, license: "CC-BY-SA-4.0", domain: "geospatial", title: "Geographic_information_system", target_tokens: 30_000}
+  - {id: "wp_remote_sensing",         type: wikipedia, license: "CC-BY-SA-4.0", domain: "geospatial", title: "Remote_sensing", target_tokens: 25_000}
+  - {id: "wp_openstreetmap",          type: wikipedia, license: "CC-BY-SA-4.0", domain: "geospatial", title: "OpenStreetMap", target_tokens: 30_000}
+  - {id: "wp_isro",                   type: wikipedia, license: "CC-BY-SA-4.0", domain: "geospatial", title: "Indian_Space_Research_Organisation", target_tokens: 50_000}
+  - {id: "wp_landsat",                type: wikipedia, license: "CC-BY-SA-4.0", domain: "geospatial", title: "Landsat_program", target_tokens: 25_000}
+  - {id: "wp_sentinel",               type: wikipedia, license: "CC-BY-SA-4.0", domain: "geospatial", title: "Sentinel-2", target_tokens: 20_000}
+
+stage2_pdfs:
+  # PDFs deferred to Stage 2 (requires pdfplumber install + extraction). These are documented for the v5 augmentation pass, not pulled in v4.
+  - "https://www.mha.gov.in/sites/default/files/250883_english_01042024.pdf"           # BNS
+  - "https://www.mha.gov.in/sites/default/files/2024-04/250884_2_english_01042024.pdf" # BNSS
+  - "https://www.mha.gov.in/sites/default/files/2024-04/250882_english_01042024_0.pdf" # BSA
+  - "https://incometaxindia.gov.in/Documents/income-tax-act-1961-as-amended-by-finance-act-2025.pdf"
+  - "https://cbic-gst.gov.in/pdf/CGST-Act-Updated-31082021.pdf"
+  - "https://cbic-gst.gov.in/pdf/new-faq-on-gst-second-edition.pdf"
+  - "https://www.indiacode.nic.in/bitstream/123456789/19150/1/constitution_of_india.pdf"
+  - "https://irp.fas.org/doddir/army/fm3-05-70.pdf"
+  - "https://irp.fas.org/doddir/army/fm3-25-26.pdf"
+  - "https://www.globalsecurity.org/military/library/policy/army/fm/4-25-11/fm4-25-11.pdf"
+  - "https://irp.fas.org/doddir/army/fm3-05-30.pdf"
+  - "https://irp.fas.org/doddir/dod/jp1.pdf"
+  - "https://irp.fas.org/doddir/dod/jp3_0.pdf"
+  - "https://www.cia.gov/resources/csi/static/Pyschology-of-Intelligence-Analysis.pdf"
+  - "https://www.cia.gov/resources/csi/static/Tradecraft-Primer-apr09.pdf"
+  - "https://nsarchive2.gwu.edu/NSAEBB/NSAEBB122/CIA%20Kubark%201-60.pdf"
+  - "https://www.intelligence.senate.gov/sites/default/files/hearings/95mkultra.pdf"
