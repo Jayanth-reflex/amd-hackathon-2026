@@ -45,6 +45,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+      - name: install deps
+        run: pip install pyyaml
       - name: import smoke (no-GPU paths)
         run: |
           python -c "import yaml; print(yaml.safe_load(open('gateway/policy.yaml')))"
