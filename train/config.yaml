@@ -56,7 +56,7 @@ training:
   dataloader_num_workers: 0
   dataset_num_proc: 1
   group_by_length: true
-  report_to: [wandb, tensorboard]
+  report_to: [wandb]
   run_name: qwen36-domain-aggressive-rev5.1
   seed: 3407
 
