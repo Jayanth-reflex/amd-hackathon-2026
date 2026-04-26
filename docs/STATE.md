@@ -1,17 +1,24 @@
 # State Snapshot — amd-hackathon-2026
 
-> **Resume-anywhere doc.** Read this first if you're picking up the project from a compacted conversation, a new session, or another collaborator. Updated 2026-04-26 22:15 IST.
+> **Resume-anywhere doc.** Read this first if you're picking up the project from a compacted conversation, a new session, or another collaborator. Updated 2026-04-27 00:10 IST.
 
 ---
 
 ## 0. TL;DR — where we are right this second
 
-- **Sprint hour:** H+4.7 of 48 hours (started Apr 26 17:30 IST)
-- **GPU credit used:** ~$3 of $100 (rate: $1.99/hr on idle/active MI300X)
-- **Current phase:** Dataset assembly running on CPU; main 19h training launches when assembly hits ~30M tokens
-- **Blocking:** none on user side
-- **What's running:** `tmux dataprep` session on droplet → `python3 train/prepare_data.py` (v3 with HF token + improved normalize_record)
-- **What's next:** wait for `blend.jsonl` to reach ~30M+ tokens (~20-30 more min), then launch main fine-tune
+- **Sprint hour:** H+6.7 of 48 hours (started Apr 26 17:30 IST)
+- **GPU credit used:** ~$13 of $100 (rate: $1.99/hr; ~6.5h since droplet active)
+- **Current phase:** **MAIN TRAINING RUNNING** on packed 49.5M-token blend, 1 epoch, ~19.3h remaining
+- **W&B run live:** https://wandb.ai/jayanth-jr-icims/huggingface/runs/i1bjy50l
+- **Latest metrics (step 50/1,695):** loss 1.32 (was 3.98 at step 10 — clean monotonic decrease), grad_norm 0.39, lr 4.9e-5, 42.3s/effective-step, GPU 81% / 408W
+- **What's next (auto, no action needed):** training completes ~20:00 IST Apr 27 → merge → Heretic → GGUF → deploy → demo
+
+### Recent fixes documented in §7 lessons
+1. Original blend had 143k SHORT rows (~340 tokens avg) — each step processed only ~2,728 actual tokens out of 32,768 capacity
+2. Naive 2-epoch run would have taken **77h per epoch** (we'd have killed budget)
+3. **Sequence packing** applied: 143,447 short rows → 13,561 packed rows of avg 3,653 tokens (no data loss; +0.1M tokens for separators)
+4. New per-step time: 42.3s (heavier per step but 13× fewer steps) → **1 epoch in ~20.5h** vs the un-packed 77h
+5. Dropped to **1 epoch** to fit in remaining 41h sprint budget with ~4.5h post-training buffer
 
 ---
 
@@ -168,23 +175,47 @@ Macro: General 55% / Reasoning 7% / Tools 6% / **Domain 32%** (heavier specialty
 
 ## 5. What's running NOW
 
-### 5.1 `tmux dataprep` on droplet (started 2026-04-26 16:40 UTC)
-Command:
+### 5.1 Docker container `training-run` (launched 2026-04-26 18:15 UTC = 23:45 IST)
+Image: `vllm/vllm-openai-rocm:v0.17.1` w/ `transformers` from main + `peft` + `wandb`
+Command (inside container):
 ```
-python3 train/prepare_data.py \
+python train/train_v2.py \
   --config train/config.yaml \
-  --out /data/hf/blend.jsonl \
-  --raw-dir /data/hf/blend_raw \
-  --tokenizer /data/hf/Qwen3.6-35B-A3B
+  --data /data/hf/blend_packed.jsonl \
+  --base-model-path /data/hf/Qwen3.6-35B-A3B
 ```
-With env: `HF_TOKEN`, `HF_HOME=/data/hf`, `HF_HUB_ENABLE_HF_TRANSFER=1`.
+Env: `HF_TOKEN`, `WANDB_API_KEY`, `PYTORCH_ALLOC_CONF=expandable_segments:True`, all AITER MoE flags.
+GPU passthrough: `--device=/dev/kfd --device=/dev/dri --group-add video`.
 
-Logs at `/data/hf/prepare3.log`. Inspect via `tmux attach -t dataprep` or `tail -f /data/hf/prepare3.log`.
+Logs (host): `/data/hf/train_packed.log` and `docker logs training-run`.
+Live metrics: https://wandb.ai/jayanth-jr-icims/huggingface/runs/i1bjy50l
 
 ### 5.2 Existing artifacts
-- `/data/hf/blend.jsonl` — 13.7M tokens (32,394 rows, 6 sources from v2 partial run)
-- `/data/hf/blend_raw/` — 178 MB across 20 raw files
-- v3 will overwrite `blend.jsonl` when it reaches its merge step
+- `/data/hf/blend.jsonl` — original 40M-token general/reasoning/tools blend
+- `/data/hf/blend_v4_addon.jsonl` — 9M domain tokens added via v4 fetcher (HF + Project Gutenberg + Wikipedia)
+- `/data/hf/blend_combined.jsonl` — 49.4M tokens, 143,447 rows (avg 340 tokens/row — too short for efficient training)
+- `/data/hf/blend_packed.jsonl` — **13,561 packed rows × ~3,653 tokens = 49.5M tokens** (the actual training input)
+- `/data/hf/blend_raw_v4/` — 80 raw source files for v4 fetch (preserved for re-blending)
+- `/data/out/lora_adapter/` — checkpoints written every 500 steps during training
+- `/data/secrets/{hf_token,wandb_key}` — chmod 600
+
+### 5.3 Live training run snapshot (auto-refresh by querying W&B)
+| Metric | Value at last check |
+|---|---|
+| Run ID | `i1bjy50l` |
+| Started | 2026-04-26 18:15 UTC |
+| Step | 50 / 1,695 |
+| Epoch progress | 2.95% |
+| Elapsed | 35 min |
+| Per-step rate | 42.3s |
+| ETA remaining | **~19.3h** |
+| Loss (latest) | 1.32 (down from 3.98 at step 10) |
+| Grad norm | 0.39 (stable) |
+| Learning rate | 4.9e-5 (peak after warmup) |
+| GPU util | 81% |
+| GPU power | 408W |
+
+To re-fetch live: `ssh root@165.245.134.90 'curl -s -X POST -u "api:$(cat /data/secrets/wandb_key)" "https://api.wandb.ai/graphql" -H "Content-Type: application/json" -d "{\"query\":\"{ project(name: \\\"huggingface\\\", entityName: \\\"jayanth-jr-icims\\\") { runs(first:1, order:\\\"-createdAt\\\") { edges { node { state summaryMetrics } } } } }\"}"'
 
 ---
 
@@ -232,9 +263,16 @@ Logs at `/data/hf/prepare3.log`. Inspect via `tmux attach -t dataprep` or `tail 
 | Initial Droplet creation had wrong "Create" button click trigger pattern in dialogs | After registering SSH key, double-check active radio button before clicking Create |
 | AMD Developer Cloud defaults to **8×MI300X** plan ($15.92/hr), not single | Always click the lower MI300X plan radio explicitly |
 | MI300X exposes 192 GB HBM3 but transformers reports 205.8 GB | Use 192 GB as planning anchor; ~14 GB overhead is normal |
-| Some HF datasets (Salesforce/xlam-fc-60k) are gated | Need HF_TOKEN env var set before fetching |
+| Some HF datasets (Salesforce/xlam-fc-60k, opennyaiorg/aalap, opennyaiorg/InJudgements) are gated | Need HF_TOKEN env var; gated datasets also need user to click "Request access" on HF page |
 | `dolphin-r1` `reasoning-deepseek` is a config name, not a split | Try `name=X, split=train` as second attempt |
 | Indian gov URLs (incometaxindia.gov.in/cbic-gst.gov.in/indiankanoon API) often 404/403 | Don't rely on these scrapes; use synthetic generation or scrape Wikipedia for Indian law/tax content |
+| HF Trainer 5.7+ removed `group_by_length` from TrainingArguments | Just remove the kwarg |
+| HF Trainer 5.7+ requires `tensorboard` package if listed in `report_to` | Either install tensorboard or use `report_to: [wandb]` only |
+| `optim: adamw_8bit` fails without `bitsandbytes` (which is fragile on ROCm) | Use `optim: adamw_torch` (vanilla; slightly more memory but reliable) |
+| **Naive training on 143k rows × 340 tokens avg wastes 92% of GPU compute** (each step processes only 8% of its capacity) | **Sequence packing**: concatenate short rows up to `max_seq_length` with EOS separators. 143k rows → 13.5k packed rows. Same content, 13× fewer steps. |
+| HF Trainer counts `state.global_step` as effective optimizer steps (after grad_accum), not micro-steps | Used to compute throughput; don't confuse with micro-step rate |
+| MI300X virtual function reports empty model name in `torch.cuda.get_device_name(0)` | Cosmetic; rocm-smi shows real name. Don't use device name for detection |
+| W&B HF Trainer integration auto-creates "huggingface" project under default entity, ignoring `wandb.entity` in our config | Set `WANDB_PROJECT` and `WANDB_ENTITY` env vars before `Trainer()` if we want to override. For this run, the auto-grouping put us under `jayanth-jr-icims` org which is fine. |
 
 ---
 
@@ -412,6 +450,7 @@ ssh root@165.245.134.90 'tmux new-session -d -s train "
 | Date | What changed | By |
 |---|---|---|
 | 2026-04-26 22:15 IST | Initial creation — captures full state through smoke gate, profile, and dataset prep v3 launch | Claude |
+| 2026-04-27 00:10 IST | TRAINING LIVE update: packing applied (143k → 13.5k rows), real per-step time 42.3s, ETA 19.3h, current loss 1.32 at step 50. Lessons learned: 5 new entries (group_by_length removed, tensorboard required, adamw_8bit fragile on ROCm, packing is mandatory for short rows, W&B auto-entity grouping). | Claude |
 
 ---
 
