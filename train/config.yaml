@@ -1,5 +1,7 @@
 # Training config for amd-hackathon-2026
-# Revision 5.1 — Option B (8K seq_len, 80M tokens, flash-attn-2)
+# Revision 5.2 — Option B-prime (4K seq_len, 80M tokens, flash-attn-2)
+# Profile result on MI300X 192GB at 8K OOM'd; 4K fits at 169GB peak / 28.3s/step.
+# 80M tokens × 28.3s/step ÷ 65,536 tokens/step = 19.2h projected training time.
 # Locked dataset blend per Jayanth's 2026-04-26 turn.
 
 base_model: unsloth/Qwen3.6-35B-A3B
@@ -16,7 +18,7 @@ output:
 
 # Loader (Unsloth FastVisionModel — Qwen3.6 is multimodal)
 loader:
-  max_seq_length: 8192
+  max_seq_length: 4096          # OOM at 8K w/o flash-linear-attention; 4K fits at 169GB peak
   load_in_4bit: false
   load_in_16bit: true
   full_finetuning: false
@@ -35,11 +37,11 @@ lora:
   freeze_vision_encoder: true
   freeze_moe_router: true
 
-# Training (Option B target: ~80M tokens, ~18h on MI300X w/ flash-attn-2)
+# Training (Option B-prime: ~80M tokens at 4K seq, profiled at 19.2h on MI300X)
 training:
-  num_train_epochs: 1               # single pass at 8K seq
-  per_device_train_batch_size: 2
-  gradient_accumulation_steps: 4    # effective batch = 8
+  num_train_epochs: 1               # single pass at 4K seq
+  per_device_train_batch_size: 1    # bumped down 2→1 to fit memory at 4K
+  gradient_accumulation_steps: 8    # bumped up 4→8 to keep effective batch = 8
   learning_rate: 5.0e-5
   lr_scheduler_type: cosine
   warmup_steps: 50
