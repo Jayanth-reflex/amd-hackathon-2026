@@ -37,11 +37,11 @@ lora:
   freeze_vision_encoder: true
   freeze_moe_router: true
 
-# Training (Option B-prime: ~80M tokens at 4K seq, profiled at 19.2h on MI300X)
+# Training (49M tokens combined, ~6h/epoch — 2 epochs = ~12h)
 training:
-  num_train_epochs: 1               # single pass at 4K seq
-  per_device_train_batch_size: 1    # bumped down 2→1 to fit memory at 4K
-  gradient_accumulation_steps: 8    # bumped up 4→8 to keep effective batch = 8
+  num_train_epochs: 2               # 2 passes since 49M < 80M target
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8    # effective batch = 8
   learning_rate: 5.0e-5
   lr_scheduler_type: cosine
   warmup_steps: 50
