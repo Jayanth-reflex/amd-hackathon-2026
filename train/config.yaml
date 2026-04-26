@@ -60,10 +60,10 @@ training:
   run_name: qwen36-domain-aggressive-rev5.1
   seed: 3407
 
-# W&B
+# W&B (verified entity via API: jayanth-jr)
 wandb:
   project: amd-hackathon-2026
-  entity: jayanth-reflex
+  entity: jayanth-jr
   tags: [mi300x, qwen3.6, lora, bf16, hackathon-2026, rev5.1]
 
 # Mid-eval callback (25/50/75/100% checkpoints)
