@@ -23,7 +23,7 @@ async function callGateway(prompt: string): Promise<Verdict> {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        model: "Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive",
+        model: "Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.7,
         top_p: 0.95,

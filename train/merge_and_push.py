@@ -1,6 +1,6 @@
 """Merge LoRA adapter into base + push BF16 to HF Hub.
 
-Runs at H+22 in the §G timeline. Output: `Jayanth/Qwen3.6-35B-A3B-Domain`
+Runs at H+22 in the §G timeline. Output: `Reflex-jr/Qwen3.6-35B-A3B-Domain`
 (Apache-2.0, pre-Heretic). The downstream Heretic step then produces the
 `-Aggressive` variant.
 """

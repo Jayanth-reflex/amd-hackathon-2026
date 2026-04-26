@@ -3,7 +3,7 @@
 set -euo pipefail
 
 OUT_DIR="${OUT_DIR:-/workspace/gguf_out}"
-REPO="${REPO:-Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF}"
+REPO="${REPO:-Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF}"
 
 # Ensure repo exists (idempotent)
 huggingface-cli repo create "${REPO}" --type model -y || true
@@ -17,7 +17,7 @@ huggingface-cli upload "${REPO}" "${OUT_DIR}" . \
 cat > "${OUT_DIR}/README.md" <<'EOF'
 ---
 license: apache-2.0
-base_model: Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive
+base_model: Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive
 tags:
   - mi300x
   - qwen3.6

@@ -6,7 +6,7 @@ treats `--expect-max` as the ship/no-ship threshold.
 
 Usage:
     python abliterate/refusal_benchmark.py \\
-        --model Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive \\
+        --model Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive \\
         --prompts eval/refusal_465.jsonl \\
         --expect-max 5 \\
         --out logs/refusal_results.json

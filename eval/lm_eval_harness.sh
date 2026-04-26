@@ -3,7 +3,7 @@
 # Bumped from sample to full benchmark per Revision 5 GPU-saturation mandate.
 set -euo pipefail
 
-MODEL="${MODEL:-Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive}"
+MODEL="${MODEL:-Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive}"
 OUT_DIR="${OUT_DIR:-/workspace/eval_results}"
 mkdir -p "${OUT_DIR}"
 

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # MANDATORY post-merge step. Runs at H+23 in the §G timeline.
 #
-# Heretic dense pass + EGA on `Jayanth/Qwen3.6-35B-A3B-Domain` →
-# `Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive`.
+# Heretic dense pass + EGA on `Reflex-jr/Qwen3.6-35B-A3B-Domain` →
+# `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive`.
 #
 # HARD GATE: refusal benchmark must show ≤5/465 before GGUF conversion.
 # If above 5/465, the architectural pitch ("model maximally capable, policy
 # at app layer") fails. Re-run with --max-trials 200 + widen prompts.
 set -euo pipefail
 
-SRC="${SRC:-Jayanth/Qwen3.6-35B-A3B-Domain}"
-DST="${DST:-Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive}"
+SRC="${SRC:-Reflex-jr/Qwen3.6-35B-A3B-Domain}"
+DST="${DST:-Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive}"
 MAX_TRIALS="${MAX_TRIALS:-100}"     # bumped from spec's 50 — saturate budget
 TARGET_REFUSALS="${TARGET_REFUSALS:-0}"
 CEILING="${CEILING:-5}"

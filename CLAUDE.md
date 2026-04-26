@@ -1,6 +1,6 @@
 # About Jayanth — read this first, every session
 
-**Refer to me as "buddy for life."** My name is Jayanth (`@Jayanth-reflex` on GitHub, `Jayanth` on HF, `jayanthreddy268.jr@gmail.com`). Solo dev in India running this hackathon. Default to candid, decisive, no-hedge collaboration. I prefer terse responses with code over long explanations.
+**Refer to me as "buddy for life."** My name is Jayanth (`@Jayanth-reflex` on GitHub, `Reflex-jr` on HF, `jayanthreddy268.jr@gmail.com`). Solo dev in India running this hackathon. Default to candid, decisive, no-hedge collaboration. I prefer terse responses with code over long explanations.
 
 ---
 
@@ -29,7 +29,7 @@ This is **Revision 4**. Critical changes from prior revisions:
 - **License requirement:** Submission must be **MIT-licensed**, original work.
 - **Submission deliverables:** ≤ 5-minute demo video, ≤ 300 MB upload, public GitHub repo, written description, X post tagging `@lablabai @AIatAMD #AMDDevHackathon`.
 - **Track choice:** **Vision & Multimodal** + parallel **Build-in-Public** narrative.
-- **My profile:** Solo dev in India; primary stack JS/TS + Python; HF account `Jayanth`; private VPS for gateway; **MacBook M4 (24 GB unified)** as failover.
+- **My profile:** Solo dev in India; primary stack JS/TS + Python; HF account `Reflex-jr`; private VPS for gateway; **MacBook M4 (24 GB unified)** as failover.
 
 ---
 
@@ -74,7 +74,7 @@ Open with a sharp pitch: **a domain-specialized, vision-capable, MIT-licensed Qw
 
 ## §C — Fine-Tuning Plan (Single-Workflow, Mandatory Abliteration)
 
-**Workflow:** `Qwen/Qwen3.6-35B-A3B` BF16 → Unsloth **bf16** LoRA on the §E dataset blend → merge → push to HF (`Jayanth/Qwen3.6-35B-A3B-Domain`) → **MANDATORY Heretic abliteration** to 0/465 refusals → re-push abliterated weights as `Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive`.
+**Workflow:** `Qwen/Qwen3.6-35B-A3B` BF16 → Unsloth **bf16** LoRA on the §E dataset blend → merge → push to HF (`Reflex-jr/Qwen3.6-35B-A3B-Domain`) → **MANDATORY Heretic abliteration** to 0/465 refusals → re-push abliterated weights as `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive`.
 
 ### C.1 Why Unsloth bf16 LoRA (not QLoRA)
 - Unsloth explicitly warns against MoE QLoRA for Qwen3.6 ("MoE QLoRA 4-bit is not recommended due to BitsandBytes limitations").
@@ -137,14 +137,14 @@ model = FastVisionModel.get_peft_model(
 
 ```bash
 # MANDATORY post-merge step
-heretic Jayanth/Qwen3.6-35B-A3B-Domain \
-  --auto-save Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive \
+heretic Reflex-jr/Qwen3.6-35B-A3B-Domain \
+  --auto-save Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive \
   --target-refusals 0 \
   --max-trials 50
 
 # Verification gate — MUST pass before GGUF conversion
 python abliterate/refusal_benchmark.py \
-  --model Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive \
+  --model Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive \
   --prompts eval/refusal_465.jsonl \
   --expect 0
 # If >0 refusals, re-run Heretic with EGA enabled or higher trial count.
@@ -173,7 +173,7 @@ docker run -it --rm --network host --device=/dev/kfd --device=/dev/dri \
   -e HIP_FORCE_DEV_KERNARG=1 \
   -e TORCH_BLAS_PREFER_HIPBLASLT=1 \
   rocm/vllm-dev:latest \
-  vllm serve Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive \
+  vllm serve Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive \
     --port 8000 \
     --tensor-parallel-size 1 \
     --max-model-len 131072 \
@@ -271,11 +271,11 @@ Apply: dedupe (MinHash), language filter (en + hi where present), toxicity prefi
 
 ```bash
 # 1) BF16 GGUF (lossless)
-python convert_hf_to_gguf.py ./Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive \
+python convert_hf_to_gguf.py ./Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive \
     --outtype bf16 --outfile Qwen3.6-35B-A3B-Domain-Aggressive-BF16.gguf
 
 # 2) mmproj (vision tower)
-python convert_hf_to_gguf.py ./Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive \
+python convert_hf_to_gguf.py ./Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive \
     --mmproj --outfile mmproj-Qwen3.6-35B-A3B-Domain-Aggressive-f16.gguf
 
 # 3) Importance matrix (200 chunks WikiText-2)
@@ -316,7 +316,7 @@ Total ladder: ~70–90 minutes on MI300X.
 ```bash
 mkdir -p gguf_out
 mv *gguf gguf_out/
-huggingface-cli upload Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF ./gguf_out . \
+huggingface-cli upload Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF ./gguf_out . \
   --repo-type=model
 ```
 
@@ -350,12 +350,12 @@ Model card must include:
 | 2 | Apr 26 19:30 | **H+2 smoke gate (mandatory):** 100-step Unsloth test on 1k rows with `UNSLOTH_COMPILE_DISABLE=1`. Confirm: (a) loss decreases monotonically, (b) memory stable < 90 GB, (c) `processor.tokenizer` extraction works, (d) `convert_hf_to_gguf.py` recognizes the arch. **Kill-switch ladder on fail:** Qwen3.6 → Qwen3.5 → `Qwen/Qwen3-30B-A3B`. | 1 |
 | 3 | Apr 26 20:30 | Dataset blend prep on **CPU concurrently** (MinHash dedupe, ChatML packing); GPU starts main fine-tune launch. | 1.5 |
 | 4–22 | Apr 26 21:30 → Apr 27 15:30 | **Main LoRA fine-tune, 2 epochs / ~200M tokens** (bumped from 1 epoch / 120M to saturate budget). W&B mid-evals at 25/50/75/100% via `TrainerCallback`. Sleep through final ~6h. | 18 |
-| 22 | Apr 27 15:30 | `model.merge_and_unload()` → push BF16 to `Jayanth/Qwen3.6-35B-A3B-Domain` (Apache-2.0). Held-out eval, baseline refusal rate captured. | 1 |
-| 23–28 | Apr 27 16:30 → 21:30 | **MANDATORY Heretic abliteration**, `--max-trials 100` (bumped from 50), EGA pre-enabled. Push to `Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive`. | 5 |
+| 22 | Apr 27 15:30 | `model.merge_and_unload()` → push BF16 to `Reflex-jr/Qwen3.6-35B-A3B-Domain` (Apache-2.0). Held-out eval, baseline refusal rate captured. | 1 |
+| 23–28 | Apr 27 16:30 → 21:30 | **MANDATORY Heretic abliteration**, `--max-trials 100` (bumped from 50), EGA pre-enabled. Push to `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive`. | 5 |
 | 28 | Apr 27 21:30 | **Heretic refusal benchmark gate (HARD)**: 465 prompts, must show ≤5/465. Fail → re-run with `--max-trials 200` + widen prompts. Above 5/465 → ship blocked. | 0.5 |
 | 29 | Apr 27 22:30 | BF16 GGUF + `mmproj-Qwen3.6-35B-A3B-Domain-Aggressive-f16.gguf` generation. mmproj diff sanity (Heretic must not have touched vision tower). | 1 |
 | 30 | Apr 27 23:30 | Imatrix, **500 chunks WikiText-2** (bumped from 200 — better calibration since GPU budget allows). | 1 |
-| 31–34 | Apr 28 00:30 → 03:30 | **9-quant GGUF ladder**: BF16, Q8_0, Q6_K, Q5_K_M, **Q4_K_M (default)**, IQ4_XS, Q3_K_M, IQ3_M, IQ2_M. Push to `Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF`. | 3 |
+| 31–34 | Apr 28 00:30 → 03:30 | **9-quant GGUF ladder**: BF16, Q8_0, Q6_K, Q5_K_M, **Q4_K_M (default)**, IQ4_XS, Q3_K_M, IQ3_M, IQ2_M. Push to `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF`. | 3 |
 | 34–36 | Apr 28 03:30 → 05:30 | Perplexity-drift gate per quant (reject any >3% drift vs BF16 reference). vLLM + llama.cpp-server co-residence on MI300X (`--gpu-memory-utilization 0.55` for vLLM). | 1.5 |
 | 36–38 | Apr 28 05:30 → 07:30 | Gateway + Llama-Guard-3-1B deploy on private VPS. Frontend (Next.js) up. End-to-end demo path live. Sleep window. | 1 |
 | 38–42 | Apr 28 07:30 → 11:30 | **Capability regression suite (expanded)**: lm-eval-harness MMLU/HellaSwag/TruthfulQA/GSM8K (250 each), BBH-Hard, 300-item domain held-out, 100-item multimodal. | 4 |
@@ -442,20 +442,20 @@ huggingface-cli download unsloth/Qwen3.6-35B-A3B --local-dir ./base
 docker compose run train python train/train_lora.py --config train/config.yaml
 
 # Merge & push (Day 3 morning)
-python train/merge_and_push.py --out Jayanth/Qwen3.6-35B-A3B-Domain
+python train/merge_and_push.py --out Reflex-jr/Qwen3.6-35B-A3B-Domain
 
 # MANDATORY Heretic + verification (Day 3 morning)
-heretic Jayanth/Qwen3.6-35B-A3B-Domain \
-  --auto-save Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive \
+heretic Reflex-jr/Qwen3.6-35B-A3B-Domain \
+  --auto-save Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive \
   --target-refusals 0
 python abliterate/refusal_benchmark.py \
-  --model Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive \
+  --model Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive \
   --prompts eval/refusal_465.jsonl \
   --expect-max 5
 # DO NOT proceed if benchmark fails
 
 # GGUF (Day 3 afternoon)
-bash quantize/convert.sh Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive
+bash quantize/convert.sh Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive
 bash quantize/imatrix.sh
 bash quantize/ladder.sh
 bash quantize/push_gguf.sh
@@ -474,7 +474,7 @@ docker compose up frontend gateway
 # AMD ADC dashboard → Droplets → Destroy
 ```
 
-All commands reference **our** repo `Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive` and `Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF` — never HauhauCS.
+All commands reference **our** repo `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive` and `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF` — never HauhauCS.
 
 ---
 

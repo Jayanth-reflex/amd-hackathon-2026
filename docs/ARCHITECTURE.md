@@ -51,7 +51,7 @@ behind each component choice, and the dependency graph between scripts.
   MoE+LoRA. Includes loss-spike kill-switch (1.3× ratio) and mid-eval at
   25/50/75/100%.
 - **`merge_and_push.py`** — `model.merge_and_unload()` then `safetensors`
-  shard at 5 GB, push to `Jayanth/Qwen3.6-35B-A3B-Domain` (Apache-2.0).
+  shard at 5 GB, push to `Reflex-jr/Qwen3.6-35B-A3B-Domain` (Apache-2.0).
 
 ### `abliterate/`
 - **`run_heretic.sh`** — orchestrates the dense pass + EGA. `--max-trials 100`
@@ -70,7 +70,7 @@ behind each component choice, and the dependency graph between scripts.
 - **`ladder.sh`** — loops over 9 quants: BF16, Q8_0, Q6_K, Q5_K_M, Q4_K_M,
   IQ4_XS, Q3_K_M, IQ3_M, IQ2_M.
 - **`push_gguf.sh`** — uploads everything to
-  `Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF` and writes the model card.
+  `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF` and writes the model card.
 
 ### `eval/`
 - **`lm_eval_harness.sh`** — MMLU/HellaSwag/TruthfulQA/GSM8K/BBH-Hard at

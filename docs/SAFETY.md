@@ -11,7 +11,7 @@ axis). Either axis alone is weaker than both together.
 
 ## Tier 1 — Model
 
-`Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive` is verified to **0/465 refusals
+`Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive` is verified to **0/465 refusals
 (ceiling 5/465 with documented deviation)** on a fixed adversarial corpus
 post-Heretic abliteration. Verification artifacts:
 

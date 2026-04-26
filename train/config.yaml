@@ -10,9 +10,9 @@ fallback_models:
   - unsloth/Qwen3-30B-A3B     # tier-3, more battle-tested
 
 output:
-  hf_repo: Jayanth/Qwen3.6-35B-A3B-Domain
-  aggressive_repo: Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive
-  gguf_repo: Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF
+  hf_repo: Reflex-jr/Qwen3.6-35B-A3B-Domain
+  aggressive_repo: Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive
+  gguf_repo: Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF
   local_dir: /workspace/out/lora_adapter
   base_local: /data/hf/Qwen3.6-35B-A3B   # already downloaded on droplet
 

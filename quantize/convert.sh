@@ -3,7 +3,7 @@
 # Runs at H+29 in the §G timeline. Requires llama.cpp built with HIP+ROCWMMA.
 set -euo pipefail
 
-SRC_REPO="${SRC_REPO:-Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive}"
+SRC_REPO="${SRC_REPO:-Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive}"
 LOCAL_DIR="${LOCAL_DIR:-/data/hf/Qwen3.6-35B-A3B-Domain-Aggressive}"
 OUT_DIR="${OUT_DIR:-/workspace/gguf_out}"
 LCPP="${LCPP:-/workspace/llama.cpp}"

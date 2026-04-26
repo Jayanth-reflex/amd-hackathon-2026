@@ -10,7 +10,7 @@ MMPROJ="${MMPROJ:-${GGUF_DIR}/mmproj-Qwen3.6-35B-A3B-Domain-Aggressive-f16.gguf}
 
 if [[ ! -f "${MODEL}" ]]; then
     echo "model not found: ${MODEL}"
-    echo "pull with: huggingface-cli download Jayanth/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF \\"
+    echo "pull with: huggingface-cli download Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF \\"
     echo "    --include '*Q4_K_M.gguf' '*mmproj*' --local-dir ${GGUF_DIR}"
     exit 1
 fi
