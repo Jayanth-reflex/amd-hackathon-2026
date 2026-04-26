@@ -54,21 +54,47 @@ def chatml_wrap(messages: list[dict]) -> str:
 
 
 def normalize_record(record: dict) -> str | None:
-    """Best-effort normalize a heterogeneous record to a ChatML string."""
+    """Best-effort normalize a heterogeneous record to a ChatML string.
+
+    Handles common HF dataset schemas:
+    - {messages: [...]}                   — OpenAI / OpenHermes / oasst2
+    - {conversations: [{from, value}]}    — ShareGPT / SystemChat / SlimOrca
+    - {instruction, output, [input]}      — Alpaca / Tulu / SFT
+    - {prompt, response}                  — generic
+    - {query, response}                   — MetaMathQA
+    - {question, answer}                  — orca-math, MathInstruct
+    - {chat: "...USER...ASSISTANT..."}    — glaive-function-calling-v2
+    - {system, tools, conversations}      — hermes-function-calling-v1
+    - {text: "..."}                       — plain pretrain
+    """
+    # 1. messages
     if "messages" in record and isinstance(record["messages"], list):
         return chatml_wrap(record["messages"])
+
+    # 2. conversations (ShareGPT-style)
     if "conversations" in record and isinstance(record["conversations"], list):
         msgs = []
+        # Hermes-FC: prepend system + tools if present
+        if "system" in record and record.get("system"):
+            sys_content = str(record["system"])
+            if "tools" in record and record.get("tools"):
+                sys_content += "\n\nAvailable tools:\n" + str(record["tools"])
+            msgs.append({"role": "system", "content": sys_content})
         for c in record["conversations"]:
-            role = c.get("from", "user")
+            role = c.get("from", c.get("role", "user"))
             if role in ("human", "user"):
                 role = "user"
             elif role in ("gpt", "assistant", "model"):
                 role = "assistant"
-            elif role == "system":
-                role = "system"
-            msgs.append({"role": role, "content": c.get("value", "")})
-        return chatml_wrap(msgs)
+            elif role in ("system", "tool"):
+                pass
+            else:
+                role = "user"
+            content = c.get("value", c.get("content", ""))
+            msgs.append({"role": role, "content": content})
+        return chatml_wrap(msgs) if msgs else None
+
+    # 3. instruction / output (Alpaca / Tulu)
     if "instruction" in record and "output" in record:
         msgs = [
             {"role": "user", "content": record["instruction"]},
@@ -77,14 +103,38 @@ def normalize_record(record: dict) -> str | None:
         if record.get("input"):
             msgs[0]["content"] += "\n\n" + record["input"]
         return chatml_wrap(msgs)
+
+    # 4. prompt / response
     if "prompt" in record and "response" in record:
         return chatml_wrap([
             {"role": "user", "content": record["prompt"]},
             {"role": "assistant", "content": record["response"]},
         ])
+
+    # 5. query / response (MetaMathQA)
+    if "query" in record and "response" in record:
+        return chatml_wrap([
+            {"role": "user", "content": record["query"]},
+            {"role": "assistant", "content": record["response"]},
+        ])
+
+    # 6. question / answer (orca-math, MathInstruct)
+    if "question" in record and "answer" in record:
+        return chatml_wrap([
+            {"role": "user", "content": record["question"]},
+            {"role": "assistant", "content": str(record["answer"])},
+        ])
+
+    # 7. chat (glaive-function-calling-v2 — flat string with USER/ASSISTANT markers)
+    if "chat" in record and isinstance(record["chat"], str):
+        chat_text = record["chat"]
+        # Use as-is wrapped as assistant content; train_lora will tokenize
+        return chatml_wrap([{"role": "assistant", "content": chat_text}])
+
+    # 8. plain pretrain text
     if "text" in record and isinstance(record["text"], str):
-        # Plain pretrain text — wrap as a single assistant turn for SFT compat
         return chatml_wrap([{"role": "assistant", "content": record["text"]}])
+
     return None
 
 
