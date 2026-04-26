@@ -39,6 +39,40 @@ Loss curve is healthy. Will append next snapshot at ~step 200 (~02:30 IST).
 
 ---
 
+### 2026-04-27 01:16 IST — Step 110 / 1,696 (6.5%)
+
+Pulled from operator's docker-log capture (10 logging events visible since step 10).
+
+| Step | Loss | Grad norm | LR | Wall clock UTC |
+|---|---|---|---|---|
+| 10 | 3.978 | 8.576 | 9e-6 | 18:36:51 |
+| 20 | 3.735 | 7.921 | 1.9e-5 | 18:43:59 |
+| 30 | 2.638 | 5.719 | 2.9e-5 | 18:50:51 |
+| 40 | 1.574 | 0.889 | 3.9e-5 | 18:57:50 |
+| 50 | 1.316 | 0.393 | 4.9e-5 | 19:04:51 |
+| 60 | 1.263 | 0.194 | 5.0e-5 | 19:11:55 |
+| 70 | 1.176 | 0.140 | 4.998e-5 | 19:18:46 |
+| 80 | 1.089 | 0.153 | 4.996e-5 | 19:25:40 |
+| 90 | 1.092 | 0.104 | 4.993e-5 | 19:32:37 |
+| 100 | 1.069 | 0.111 | 4.989e-5 | 19:39:29 |
+| 110 | **1.006** | 0.111 | 4.984e-5 | 19:46:25 |
+
+**Observations:**
+- Loss curve is textbook clean. **3.98 → 1.01 in 110 steps (75% drop, no plateau, no spike, no oscillation).**
+- The cliff between step 30 → 40 (loss 2.64 → 1.57) is the classic "model finds gradient direction" moment as LR hits a useful range. Healthy.
+- Grad norms collapsed 8.58 → 0.11 (78× drop). Means optimizer transitioned from "everything is wrong" to "fine-tuning small adjustments". Stable.
+- LR schedule honored: linear warmup to 5e-5 by step 50, cosine decay starting (4.984e-5 at step 110).
+- Per-step rate stable at **41-42s/step** across both warmup (28 min for 40 steps = 42s/step) and post-warmup (41 min for 60 steps = 41s/step). No drift.
+
+**Updated ETA:**
+- Remaining: 1,696 - 110 = **1,586 steps**
+- × 42s = 66,612 sec = **18.5 hours**
+- Done at: ~19:46 IST Apr 27 (within 30 min of original estimate)
+
+Will append next snapshot at step ~200 (~02:30 IST) or step ~424 (25% mid-eval marker), whichever first.
+
+---
+
 ## How to fetch a fresh snapshot
 
 ```bash
