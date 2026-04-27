@@ -268,6 +268,11 @@ def main() -> int:
     ap.add_argument("--out", required=True, help="path to save abliterated model")
     ap.add_argument("--n-prompts", type=int, default=64,
                     help="number of harmful + harmless prompts each (default 64)")
+    ap.add_argument("--top-k-directions", type=int, default=1,
+                    help="apply orthogonalization against the top-K refusal directions "
+                         "(1 = single layer, 3-5 = multi-direction for stronger effect)")
+    ap.add_argument("--layer", type=int, default=None,
+                    help="force a specific layer's direction (overrides auto-pick)")
     ap.add_argument("--push-to-hub", default=None, help="HF repo to push to")
     ap.add_argument("--private", action="store_true")
     args = ap.parse_args()
@@ -310,24 +315,47 @@ def main() -> int:
 
     log.info("[4/6] computing refusal directions")
     directions, magnitudes, best_layer = compute_refusal_directions(h_residuals, l_residuals)
-    log.info("  best layer: %d  magnitude: %.4f", best_layer, magnitudes[best_layer].item())
-    # Print top 5 candidates for transparency
-    top5 = magnitudes.argsort(descending=True)[:5].tolist()
-    for rank, layer_idx in enumerate(top5):
-        log.info("    [#%d] layer=%d magnitude=%.4f", rank + 1, layer_idx, magnitudes[layer_idx].item())
+    log.info("  default best layer (auto-picked, skipping last 10%%): %d  magnitude: %.4f",
+             best_layer, magnitudes[best_layer].item())
 
-    refusal_dir = directions[best_layer]
-    log.info("  refusal direction: shape=%s norm=%.4f",
-             tuple(refusal_dir.shape), refusal_dir.norm().item())
+    # Get all candidate layers, ranked by magnitude, skipping the last 10% (final residual is artificially huge)
+    n_layers_plus = magnitudes.shape[0]
+    skip_lo = max(1, n_layers_plus // 10)
+    skip_hi = n_layers_plus - max(1, n_layers_plus // 10)
+    eligible = list(range(skip_lo, skip_hi))
+    eligible_sorted = sorted(eligible, key=lambda l: magnitudes[l].item(), reverse=True)
+    top_candidates = eligible_sorted[:max(args.top_k_directions, 5)]
+    log.info("  top candidates (eligible only):")
+    for rank, layer_idx in enumerate(top_candidates):
+        log.info("    [#%d] layer=%d magnitude=%.4f", rank + 1, layer_idx,
+                 magnitudes[layer_idx].item())
 
-    log.info("[5/6] orthogonalizing all residual-writing weights")
+    if args.layer is not None:
+        chosen_layers = [args.layer]
+        log.info("  --layer override: using layer %d only", args.layer)
+    else:
+        chosen_layers = top_candidates[: args.top_k_directions]
+        log.info("  applying %d-direction abliteration: layers %s",
+                 args.top_k_directions, chosen_layers)
+
+    log.info("[5/6] orthogonalizing all residual-writing weights "
+             "(against %d direction%s)",
+             len(chosen_layers), "s" if len(chosen_layers) > 1 else "")
     t3 = time.time()
-    counts = apply_abliteration(model, refusal_dir)
+    aggregated_counts = {}
+    for i, layer_idx in enumerate(chosen_layers):
+        d = directions[layer_idx]
+        log.info("  pass %d/%d: layer %d (norm=%.4f)",
+                 i + 1, len(chosen_layers), layer_idx, d.norm().item())
+        counts = apply_abliteration(model, d)
+        for k, v in counts.items():
+            aggregated_counts[k] = aggregated_counts.get(k, 0) + v
     log.info("  done in %.1fs", time.time() - t3)
-    for k, v in counts.items():
-        log.info("    %-22s %4d", k, v)
-    total = sum(counts.values())
+    for k, v in aggregated_counts.items():
+        log.info("    %-22s %4d (sum across %d passes)", k, v, len(chosen_layers))
+    total = sum(aggregated_counts.values())
     log.info("    %-22s %4d", "TOTAL", total)
+    counts = aggregated_counts
 
     log.info("[6/6] saving abliterated model to %s", args.out)
     out_path = Path(args.out)
@@ -340,17 +368,18 @@ def main() -> int:
     # Save abliteration metadata for the model card
     meta = {
         "method": "Arditi et al. 2024 / Labonne 2024 weight orthogonalization",
-        "best_layer": best_layer,
-        "best_magnitude": float(magnitudes[best_layer].item()),
-        "top5_candidates": [
-            {"layer": int(l), "magnitude": float(magnitudes[l].item())} for l in top5
+        "n_directions_applied": len(chosen_layers),
+        "chosen_layers": [int(l) for l in chosen_layers],
+        "chosen_magnitudes": [float(magnitudes[l].item()) for l in chosen_layers],
+        "top_candidates_eligible": [
+            {"layer": int(l), "magnitude": float(magnitudes[l].item())}
+            for l in top_candidates
         ],
         "n_harmful_prompts": len(harmful),
         "n_harmless_prompts": len(harmless),
-        "harmful_source": "walledai/AdvBench",
+        "harmful_source": "mlabonne/harmful_behaviors",
         "harmless_source": "mlabonne/harmless_alpaca",
-        "matrices_orthogonalized": counts,
-        "refusal_direction_norm": float(refusal_dir.norm().item()),
+        "matrices_orthogonalized_per_pass": counts,
     }
     (out_path / "abliteration_metadata.json").write_text(json.dumps(meta, indent=2))
     log.info("  metadata: %s", out_path / "abliteration_metadata.json")
