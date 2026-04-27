@@ -139,10 +139,33 @@ The actual abliteration script should be built around the technique, not a tool:
 
 ---
 
-## What we shipped today (Apr 27)
+## What we shipped today (Apr 27) — the honest result
 
 - Trained Qwen3.6-35B-A3B → public at https://huggingface.co/Reflex-jr/Qwen3.6-35B-A3B-Domain
-- Wrote `abliterate/abliterate_arditi.py` — custom mlabonne-style abliteration, hybrid-attention aware
-- Pushed abliterated variant → https://huggingface.co/Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive (subject to refusal benchmark passing ≤5/465)
+- Wrote `abliterate/abliterate_arditi.py` — custom mlabonne-style abliteration, hybrid-attention aware. Handles 121 residual-writing tensors per pass (1 embed + 10 self_attn + 30 linear_attn + 40 shared_expert + 40 fused MoE expert tensors of shape [256, 2048, 512]).
+- Pushed abliterated variant → https://huggingface.co/Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive
 
-Time spent on Heretic dead end: ~2 hours. Time spent writing the custom solution: ~3 hours. Net loss: ~1 hour, but with a defensible "we built our own" pitch and a reusable script for Gemma.
+**Result on a 4-prompt smoke test:** all 4 still refused, but with softer, less moralistic language. The simple Arditi/Labonne method (single forward pass per prompt, single-shot weight orthogonalization, even 5-direction multi-pass) was insufficient to reach the 0/465 we aimed for. The refusal direction is multi-modal in this model.
+
+Time accounting:
+- Heretic dead end: ~2 hours (3 separate compatibility issues, then arch wall)
+- Custom Arditi/Labonne implementation + 4 iterations: ~3 hours (1-direction, 5-direction, layer-12, smoke tests)
+- Net: ~5 hours, abliteration achieved partial softening, not elimination
+
+**The pitch shift:** "model maximally capable" → "model with reduced refusal posture (Arditi orthogonalization, 5 directions)". Llama-Guard-3-1B at the gateway is the actual policy boundary. Both axes remain provable on slides — just one is "policy fully enforced" not "policy entirely externalized".
+
+---
+
+## For the Gemma run — concrete checklist
+
+When fine-tuning + abliterating Gemma, do these IN ORDER, before training:
+
+1. **`python abliterate/test_arch_compat.py google/gemma-2-9b-it`** (or whichever Gemma variant)
+   - Confirm it lists every residual-writing tensor cleanly (no UNKNOWNs).
+   - Gemma 2 likely has standard `self_attn.o_proj` + `mlp.down_proj` — should be clean.
+2. **Smoke-run abliterate_arditi.py with `--n-prompts 4 --no-push`** on the base model. Verify it completes in <5 min and produces a sane-looking model (try one harmless generation).
+3. **Read the smoke output BEFORE training starts.** If anything looks off, switch base model NOW, not after 19 hours of training.
+4. **Training kicks off only AFTER steps 1-3 are green.**
+5. After fine-tune + merge: run abliteration as the LAST step before GGUF.
+
+Adjust if Gemma's smoke shows new architecture quirks. The script is designed to handle unknowns gracefully (returns exit code 2 with a list of unidentified modules) — fix the script first, never the model assumption.

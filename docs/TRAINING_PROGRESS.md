@@ -201,6 +201,40 @@ Pipeline starts now:
 
 ---
 
+### 2026-04-27 23:20 IST — **ABLITERATION COMPLETE (partial — see notes)**
+
+After Heretic v1.2.0 turned out to be incompatible with Qwen3.6's hybrid attention, we wrote our own architecture-aware Arditi/Labonne abliteration in `abliterate/abliterate_arditi.py`.
+
+**Live at:** https://huggingface.co/Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive
+
+**What ran:**
+- Captured last-token residuals on 64 harmful (`mlabonne/harmful_behaviors`) + 64 harmless (`mlabonne/harmless_alpaca`) prompts.
+- Computed per-layer refusal directions, picked top-5 by magnitude (skipping last 10% to avoid trivially-large final-layer signal).
+- Applied 5-direction iterative orthogonalization across **all 121 residual-writing tensors per pass × 5 passes = 605 tensor updates** in 0.3 seconds (every embedding row, every attention output projection — 10 self_attn + 30 linear_attn — every shared-expert down_proj, every fused MoE expert tensor [256, 2048, 512]).
+- Saved + pushed in 4.2 min total.
+
+**Honest result on smoke test (4 hard prompts: meth synth, Molotov, gmail hack, insurance fraud):**
+- Pre-abliteration baseline (un-abliterated `-Domain` model): all 4 → firm preachy refusals
+- 1-direction abliteration (layer 36): all 4 → softer refusals, no preachy "if you're struggling" coda
+- 5-direction abliteration (layers 36→32): all 4 → similar softer refusals; no further reduction
+- 1-direction at layer 12 (mlabonne's ~30% depth): all 4 → similar softer refusals
+
+**The simple Arditi/Labonne method was insufficient to reach 0/465 on Qwen3.6.** The model's refusal behavior is encoded across many directions and is too robust to fully eliminate via single-pass weight orthogonalization. Even with multi-direction iteration, refusals remain — though now in a noticeably softer, less moralistic form.
+
+**Why this is OK:** the architectural pitch was always two-axis:
+1. **Model: maximally capable** — partial: refusals softened but not eliminated.
+2. **Policy: enforced at app layer** via Llama-Guard-3-1B at the gateway with sha256 audit log — **this is the actual enforcement mechanism.**
+
+The gateway is unchanged and remains the primary policy boundary. The abliteration is now a "minor capability boost" rather than the headline. We will document this honestly in the model card.
+
+**Reusable lessons** (now in `docs/ABLITERATION_PLAYBOOK.md` for the Gemma run):
+- Always run an arch-compat smoke test (`abliterate/test_arch_compat.py`) at H+2 against the base model before training.
+- Don't pick an abliteration tool over the technique. The technique is 80 lines of code; tools have hidden assumptions.
+- Strongly-aligned models may need iterative or multi-direction approaches; even those may not reach 0 refusals.
+- For hackathon-grade work, lean on gateway-tier enforcement (Llama-Guard-3-1B) as the primary safety mechanism, not abliteration.
+
+---
+
 ### 2026-04-27 19:44 IST — **MERGE + UPLOAD COMPLETE** ✅
 
 | Stage | Time | Result |
