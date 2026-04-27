@@ -201,6 +201,24 @@ Pipeline starts now:
 
 ---
 
+### 2026-04-27 19:44 IST — **MERGE + UPLOAD COMPLETE** ✅
+
+| Stage | Time | Result |
+|---|---|---|
+| Base model load | 24.3s | 69.3 GB VRAM |
+| LoRA wrapper re-attach | 0.2s | (via `get_peft_model`) |
+| Adapter load | <1s | 320 tensors |
+| **Merge** | **4.3s** | clean |
+| **Save merged BF16** | **75.5s** | 16 shards, 64.6 GB |
+| **HF upload** | **57s** | hf_transfer @ ~1.14 GB/s |
+| **Total** | **2.7 min** | end-to-end |
+
+Live at **https://huggingface.co/Reflex-jr/Qwen3.6-35B-A3B-Domain** (public, 23 files, 16 safetensors shards).
+
+**Workaround**: v2 hit a `WeightConverter.__init__() got an unexpected keyword argument 'distributed_operation'` error — peft↔transformers main incompat. v3 sidestepped it by recreating the LoRA wrapper from scratch via `get_peft_model()` then loading adapter weights with `load_state_dict(strict=False)`. Bypass works.
+
+---
+
 ## How to fetch a fresh snapshot
 
 ```bash
