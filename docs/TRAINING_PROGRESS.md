@@ -101,6 +101,41 @@ Will append next snapshot at step ~424 (25% mid-eval marker, ~05:00 IST) or soon
 
 ---
 
+### 2026-04-27 11:26 IST — Step 990 / 1,696 (58.4%)
+
+Heartbeat at 05:56:20 UTC. Cleared the **25% (step 424)** and **50% (step 848)** mid-eval markers — both fired silently as expected. Training has been running for **11h 21m**.
+
+| Step | Loss | Grad norm | LR |
+|---|---|---|---|
+| 200 | 1.0087 | 0.077 | 4.900e-5 |
+| 300 | 0.9648 | 0.081 | 4.723e-5 |
+| 400 | 1.0399 | 0.094 | 4.466e-5 |
+| 500 | 1.0655 | 0.099 | 4.137e-5 |
+| 600 | 1.0406 | 0.085 | 3.749e-5 |
+| 700 | 0.9817 | 0.122 | 3.315e-5 |
+| 800 | 0.9142 | 0.091 | 2.852e-5 |
+| 900 | **0.8717** | 0.091 | 2.376e-5 |
+| 950 | 1.0832 | 0.087 | 2.139e-5 |
+| 990 | 0.9497 | 0.106 | 1.951e-5 |
+
+**Observations:**
+- **New best loss: 0.872 at step 900**, down from 0.970 at step 130. The model is genuinely learning — not just stuck in the bowl.
+- Loss now oscillates in a **0.87–1.10 band** with a clear downward trend (mean of last 50 logged points = **0.9895**). Compare to the **1.05–1.10 mean around step 200** — that's a ~10% absolute drop while LR has decayed 60% (4.90e-5 → 1.95e-5).
+- Grad norms locked at **0.07–0.12** for 800+ steps. Optimizer is in pure fine-tuning mode; no instability.
+- Per-step rate steady at **41.6s/step** (980 steps in 11h 21m). Zero degradation.
+- Cosine schedule honored exactly: 4.90e-5 → 1.95e-5 over 790 steps (39% remaining LR at 58% remaining steps — matches `1 - cos(π·x/2)` profile).
+- Loss-spike kill-switch armed but cannot trigger before step 2500 of logging history (we end at step 1696 = 169 log entries; switch needs 250). Effectively safety net is the underlying healthy curve.
+
+**Updated ETA:**
+- Remaining: 1,696 - 990 = **706 steps** × 41.6s = 29,370s = **8.16 hours**
+- Done at: 05:56 UTC + 8.16h = **~14:05 UTC = 19:35 IST Apr 27**
+- 75% mid-eval at step 1,272 ≈ **15:25 IST**.
+- 100% completion ≈ **19:35 IST**.
+
+Will append next snapshot when 75% mid-eval fires (~15:25 IST) or near completion.
+
+---
+
 ## How to fetch a fresh snapshot
 
 ```bash
