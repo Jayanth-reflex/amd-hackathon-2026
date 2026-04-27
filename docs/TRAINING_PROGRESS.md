@@ -235,6 +235,38 @@ The gateway is unchanged and remains the primary policy boundary. The abliterati
 
 ---
 
+### 2026-04-28 02:00 IST — **GGUF LADDER COMPLETE** ✅
+
+**Live at:** https://huggingface.co/Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF
+
+**9-quant ladder + imatrix + model card pushed.**
+
+| Quant | Size | Quantize time |
+|---|---|---|
+| BF16 (reference) | 69.4 GB | (conversion: 4 min) |
+| Q8_0 | 36.9 GB | 61s |
+| Q6_K | 28.5 GB | 102s |
+| Q5_K_M | 24.7 GB | 258s |
+| **Q4_K_M (default)** | **21.2 GB** | 250s |
+| IQ4_XS | 18 GB | 300s |
+| Q3_K_M | 16 GB | 164s |
+| IQ3_M | 15 GB | 673s |
+| IQ2_M | 11.7 GB | 442s |
+| imatrix.gguf | 192 MB | (calibration: 3 min) |
+
+Total wall-clock: ~52 min for full ladder (~3 min imatrix + ~45 min quants + ~4 min upload).
+
+**Issues hit + fixed:**
+1. Qwen3.6 tokenizer hash unknown to llama.cpp's `convert_hf_to_gguf.py` registry. Patched by injecting our hash → `qwen35` pre-tokenizer pattern (same family, same canonical pattern).
+2. WikiText-2 metamind URL is dead (returns 301 without location). Switched to bartowski's `calibration_datav3.txt` (the de-facto imatrix calibration corpus, ~280 KB / 66k tokens of mixed text).
+3. Built llama.cpp didn't have its `.so` files on the runtime linker path. Fixed with `LD_LIBRARY_PATH=$BIN`.
+
+**Imatrix calibration result:** PPL = 6.6283 ± 0.089 on calibration corpus. Sane number for a 35B MoE model.
+
+**Architecture coverage:** llama.cpp main supports Qwen3.5 MoE (`MODEL_ARCH.QWEN35MOE`). Hybrid attention (linear_attn → ssm_*) and 256-fused-expert MLP (ffn_*_exps) all converted cleanly. 733 tensors total in the BF16 GGUF.
+
+---
+
 ### 2026-04-27 19:44 IST — **MERGE + UPLOAD COMPLETE** ✅
 
 | Stage | Time | Result |
