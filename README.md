@@ -16,6 +16,8 @@ Track: **Vision & Multimodal** (parallel Build-in-Public narrative).
 | W&B training run (i1bjy50l) | https://wandb.ai/jayanth-jr-icims/huggingface/runs/i1bjy50l |
 | Source repo (this) | https://github.com/Jayanth-reflex/amd-hackathon-2026 |
 
+> 📖 **New here? Read [`docs/JOURNEY.md`](docs/JOURNEY.md) — a plain-English step-by-step walkthrough of the whole 48-hour sprint** (setup → data prep → training → merge → abliteration → GGUF ladder → docs).
+
 ---
 
 ## Architecture
