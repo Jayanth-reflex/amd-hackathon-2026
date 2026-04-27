@@ -136,6 +136,33 @@ Will append next snapshot when 75% mid-eval fires (~15:25 IST) or near completio
 
 ---
 
+### 2026-04-27 13:52 IST — Step 1,200 / 1,696 (70.8%)
+
+Heartbeat at 08:22:35 UTC. Training has been running for **13h 53m**. Cosine schedule has decayed LR by 80% (5e-5 → 1.04e-5) — we're well into the convergence tail.
+
+| Step | Loss | Grad norm | LR |
+|---|---|---|---|
+| 1000 | 0.9213 | 0.105 | 1.905e-5 |
+| 1050 | 0.9638 | 0.110 | 1.676e-5 |
+| 1100 | 0.9898 | 0.107 | 1.455e-5 |
+| 1150 | 0.9218 | 0.121 | 1.243e-5 |
+| 1200 | 1.0597 | 0.097 | 1.043e-5 |
+
+**Observations:**
+- Loss locked into **0.87–1.10 band** for 700+ steps. Min still 0.8717 at step 900. Last-50 mean = **1.0060** (vs 0.9895 at step 990) — slight tick up but well within noise.
+- This is **convergence behavior, not regression**. At LR 1e-5 you're making tiny updates; loss fluctuates around a plateau because each batch's intrinsic difficulty dominates the marginal LR contribution.
+- Grad norms 0.09–0.12 throughout — no instability, no spikes.
+- Per-step rate **41.6s** (1190 steps in 13h 46m). Zero drift across 70% of the run.
+- 75% mid-eval marker (step 1272) fires in ~50 min (~14:42 IST).
+
+**Updated ETA:**
+- Remaining: 1,696 - 1,200 = **496 steps** × 41.6s = 20,634s = **5.73 hours**
+- Done at: 08:22 UTC + 5.73h = **~14:06 UTC = 19:36 IST Apr 27 today**
+
+Will append a final snapshot at step 1696 when training completes.
+
+---
+
 ## How to fetch a fresh snapshot
 
 ```bash
