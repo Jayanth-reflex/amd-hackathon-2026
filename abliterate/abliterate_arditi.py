@@ -51,17 +51,46 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("abliterate_arditi")
 
 
+def _extract_text(record: dict) -> str | None:
+    """Try common column names; return first non-empty match."""
+    for col in ("text", "prompt", "behavior", "instruction", "goal", "question"):
+        v = record.get(col)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return None
+
+
 def load_prompts(harmful_n: int, harmless_n: int) -> tuple[list[str], list[str]]:
-    """walledai/AdvBench (harmful) + mlabonne/harmless_alpaca (harmless)."""
-    log.info("Loading walledai/AdvBench...")
-    adv = load_dataset("walledai/AdvBench", split="train")
-    harmful = [r["prompt"] for r in adv][:harmful_n]
+    """mlabonne/harmful_behaviors (harmful) + mlabonne/harmless_alpaca (harmless).
 
-    log.info("Loading mlabonne/harmless_alpaca...")
-    halp = load_dataset("mlabonne/harmless_alpaca", split="train")
-    harmless = [r["text"] for r in halp][:harmless_n]
+    These are the exact datasets used in Maxime Labonne's reference blog post.
+    Both are public. We fall back to AdvBench mirrors if mlabonne's pull fails.
+    """
+    harmful_sources = [
+        ("mlabonne/harmful_behaviors", "train"),
+        ("Anthropic/hh-rlhf", "test"),  # fallback
+    ]
+    harmless_sources = [
+        ("mlabonne/harmless_alpaca", "train"),
+        ("yahma/alpaca-cleaned", "train"),  # fallback
+    ]
 
-    log.info("Loaded %d harmful + %d harmless prompts", len(harmful), len(harmless))
+    def pull(sources, n: int, label: str) -> list[str]:
+        for ds_id, split in sources:
+            try:
+                log.info("Loading %s [%s]...", ds_id, split)
+                ds = load_dataset(ds_id, split=split)
+                rows = [_extract_text(r) for r in ds]
+                rows = [r for r in rows if r][:n]
+                if rows:
+                    log.info("  got %d %s prompts from %s", len(rows), label, ds_id)
+                    return rows
+            except Exception as e:
+                log.warning("  %s failed: %s", ds_id, e)
+        raise RuntimeError(f"could not load any {label} dataset")
+
+    harmful = pull(harmful_sources, harmful_n, "harmful")
+    harmless = pull(harmless_sources, harmless_n, "harmless")
     return harmful, harmless
 
 
