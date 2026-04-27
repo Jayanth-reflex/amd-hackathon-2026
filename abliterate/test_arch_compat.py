@@ -98,24 +98,23 @@ def find_residual_writers(model) -> list[ResidualWriter]:
                     add(f"model.layers.{i}.mlp.shared_expert.down_proj.weight",
                         shared_dp.weight, "mlp_shared")
 
-            # MoE routed experts
+            # MoE routed experts — handle both nn.ModuleList and fused tensor layouts
             experts = getattr(mlp, "experts", None)
             if experts is not None:
-                try:
-                    n_experts = len(experts)
-                    # Check if it's a list (Qwen3 style) or fused (DeepSeek-V2 style with parameter tensor)
-                    if n_experts > 0 and hasattr(experts[0], "down_proj"):
+                # Try fused tensor first (Qwen3.6 style: experts.down_proj is [n_experts, d_model, d_inter])
+                fused_dp = getattr(experts, "down_proj", None)
+                if isinstance(fused_dp, torch.Tensor):
+                    add(f"model.layers.{i}.mlp.experts.down_proj", fused_dp, "mlp_expert_fused")
+                else:
+                    # nn.ModuleList of experts
+                    try:
                         for j, exp in enumerate(experts):
                             dp = getattr(exp, "down_proj", None)
                             if dp is not None and hasattr(dp, "weight"):
                                 add(f"model.layers.{i}.mlp.experts.{j}.down_proj.weight",
                                     dp.weight, "mlp_expert")
-                except (TypeError, AttributeError):
-                    # Fused experts? Look for a single weight tensor.
-                    for cand in ("w2", "down_proj_weight", "experts_down_proj"):
-                        ew = getattr(experts, cand, None) or getattr(mlp, cand, None)
-                        if ew is not None and hasattr(ew, "weight"):
-                            add(f"model.layers.{i}.mlp.experts.{cand}.weight", ew.weight, "mlp_expert")
+                    except (TypeError, AttributeError):
+                        pass
 
             # block_sparse_moe (Phi-3.5-MoE style)
             bsm = getattr(layer, "block_sparse_moe", None)
