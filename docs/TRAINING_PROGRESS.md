@@ -163,6 +163,44 @@ Will append a final snapshot at step 1696 when training completes.
 
 ---
 
+### 2026-04-27 19:25 IST — **TRAINING COMPLETE — Step 1,696 / 1,696 (100%)** ✅
+
+Container `training-run` exited with **status 0** at 13:50 UTC (19:20 IST). Total wall-clock: **19h 21m** (`train_runtime` = 69,670s). Final epoch = 1.0.
+
+**Final metrics:**
+| Metric | Value |
+|---|---|
+| Total steps | 1,696 |
+| Total runtime | 19h 21m (matches projected ~20h) |
+| Avg per-step | 41.5s (rock-stable across the entire run) |
+| Reported `train_loss` (epoch avg) | **1.058** |
+| Final logged loss (step 1696) | 1.016 |
+| **Minimum loss** | **0.8646 at step 1610** (last 50 steps of cosine annealing tail produced the global min — textbook) |
+| Last-50 mean | 1.012 |
+| Grad norm range | 0.07–0.16 throughout (no spikes ever) |
+
+**Artifacts on disk** (`/data/out/lora_adapter/`):
+- `adapter_model.safetensors` — **32 MB** (the LoRA weights, 8.36M params, r=16)
+- `adapter_config.json`, `chat_template.jinja`, `tokenizer.json`, `tokenizer_config.json`, `training_args.bin`, `README.md`
+- ✅ `mideval_marker_25.json` (fired Apr 26 23:22)
+- ✅ `mideval_marker_50.json` (Apr 27 04:12)
+- ✅ `mideval_marker_75.json` (Apr 27 09:04)
+- ✅ `mideval_marker_100.json` (Apr 27 13:50)
+- Checkpoints: `checkpoint-1000`, `checkpoint-1500`, `checkpoint-1696`
+
+**No errors. No crashes. No spikes. Clean run.**
+
+---
+
+## Next phase — merge + push + abliterate
+
+Pipeline starts now:
+1. **Merge LoRA into base** — `model.merge_and_unload()` then upload merged BF16 to `Reflex-jr/Qwen3.6-35B-A3B-Domain` (~30-45 min, dominated by the 70 GB upload).
+2. **Heretic abliteration** — `--max-trials 100` + EGA, push to `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive` (~3-4h on MI300X, includes 465-prompt refusal benchmark gate).
+3. **GGUF ladder** — BF16 + mmproj + 500-chunk imatrix + 9 quants → push to `Reflex-jr/Qwen3.6-35B-A3B-Domain-Aggressive-GGUF` (~5h).
+
+---
+
 ## How to fetch a fresh snapshot
 
 ```bash
